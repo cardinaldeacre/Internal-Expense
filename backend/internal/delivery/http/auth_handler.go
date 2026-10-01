@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type AuthHandler struct {
@@ -49,10 +50,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"success": true,
 		"message": "Login successful",
 		"data": gin.H{
-			"id": user.ID,
-			"name": user.Name,
+			"id":    user.ID,
+			"name":  user.Name,
 			"email": user.Email,
-			"role": user.Role,
+			"role":  user.Role,
 		},
 	})
 }
@@ -65,4 +66,39 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		"success": true,
 		"message": "Logout successful",
 	})
+}
+
+func AuthMiddlewareCookieOnlyTest(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenString, err := c.Cookie("token")
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"message": "Unauthorized: No token provided",
+			})
+			c.Abort()
+			return
+		}
+
+		user, err := usecase.ValidateToken(db, tokenString)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"message": "Unauthorized: Invalid or expired token",
+			})
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Token is valid",
+			"data": gin.H{
+				"id":    user.ID,
+				"name":  user.Name,
+				"email": user.Email,
+				"role":  user.Role,
+			},
+		})
+	}
 }

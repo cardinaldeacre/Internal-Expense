@@ -57,3 +57,26 @@ func (u *AuthUseCase) Login(email, password string) (string, *domain.User, error
 
 	return tokenString, &user, nil
 }
+
+func ValidateToken(db *gorm.DB, tokenString string) (*domain.User, error) {
+	claims := &Claims{}
+
+	secretKey := []byte(os.Getenv("JWT_SECRET"))
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return secretKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+
+	var user domain.User
+	if err := db.Where("id = ?", claims.UserID).First(&user).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
