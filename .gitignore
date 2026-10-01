@@ -1,0 +1,48 @@
+# === Go / Backend ===
+/backend/bin/
+/backend/vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# === Node.js / Frontend ===
+/frontend/node_modules/
+/frontend/dist/
+/frontend/dist-ssr/
+*.local
+
+# === Environment & Secrets ===
+.env
+/backend/.env
+/frontend/.env
+*.pem
+credentials.json
+firebase-service-account.json
+
+# === IDE & Editor ===
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+
+# === OS Generated Files ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# === Docker & Storage Local ===
+/backend/tmp/
+/minio_data/
