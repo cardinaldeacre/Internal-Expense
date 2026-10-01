@@ -21,6 +21,7 @@ func SeedData(db *gorm.DB) {
 		log.Fatalf("Failed to hash password for seeder: %v", err)
 	}
 
+	log.Println("Seeding database...")
 	users := []domain.User{
 		{
 			Name:     "Super Admin",
