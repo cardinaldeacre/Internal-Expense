@@ -4,7 +4,10 @@ import (
 	"log"
 	"os"
 
+	"internal-expense-backend/internal/usecase"
 	"internal-expense-backend/pkg/database"
+
+	httpDelivery "internal-expense-backend/internal/delivery/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -18,8 +21,12 @@ func main() {
 	db := database.ConnectDB()
 
 	database.RunMigration(db)
+	database.SeedData(db)
 
 	r := gin.Default()
+
+	authUsecase := usecase.NewAuthUseCase(db)
+	httpDelivery.NewAuthHandler(r, authUsecase)
 
 	port := os.Getenv("PORT")
 	if port == "" {
