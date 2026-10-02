@@ -46,9 +46,20 @@ func (h *ExpenseHandler) CreateExpense(c *gin.Context) {
 	var receiptURL string
 	file, err := c.FormFile("receipt")
 	if err == nil {
+		if file.Size > 2*1024*1024 {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{"success": false, "message": "Receipt file size exceeds 2MB limit"})
+			return
+		}
+
+		contentType := file.Header.Get("Content-Type")
+		if contentType != "image/jpeg" && contentType != "image/png" && contentType != "application/pdf" {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{"success": false, "message": "Invalid receipt file type. Only JPEG, PNG, and PDF are allowed"})
+			return
+		}
+
 		receiptURL, err = utils.UploadToMinIO(file)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to upload receipt: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to upload receipt to cloud storage: " + err.Error()})
 			return
 		}
 	}
