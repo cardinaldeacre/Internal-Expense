@@ -3,6 +3,7 @@ package usecase
 import (
 	"errors"
 	"internal-expense-backend/internal/domain"
+	"internal-expense-backend/internal/repository"
 
 	"gorm.io/gorm"
 )
@@ -59,4 +60,9 @@ func (u *ExpenseUseCase) UpdateStatus(expenseID, role, actionUserID string, newS
 	expense.Status = newStatus
 	expense.Notes = notes
 	return u.db.Save(&expense).Error
+}
+
+func (u *ExpenseUseCase) GetExpenses(page, limit int, search, status, userID, role string) ([]domain.ExpenseRequest, int64, error) {
+	expenseRepo := repository.NewExpenseRepository(u.db)
+	return expenseRepo.FindAll(page, limit, search, status, userID, role)
 }
