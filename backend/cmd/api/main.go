@@ -25,6 +25,8 @@ func main() {
 
 	r := gin.Default()
 
+	r.SetTrustedProxies(nil)
+
 	authUsecase := usecase.NewAuthUseCase(db)
 	httpDelivery.NewAuthHandler(r, authUsecase)
 
