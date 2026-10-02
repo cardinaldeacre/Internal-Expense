@@ -1,7 +1,8 @@
 package http
 
 import (
-	"internal-expense-backend/internal/delivery/middleware"
+	"crypto/rand"
+	"encoding/hex"
 	"internal-expense-backend/internal/usecase"
 	"internal-expense-backend/pkg/response"
 	"net/http"
@@ -15,22 +16,19 @@ type AuthHandler struct {
 	authUsecase *usecase.AuthUseCase
 }
 
-func NewAuthHandler(r *gin.Engine, authUsecase *usecase.AuthUseCase) {
-	handler := &AuthHandler{
-		authUsecase: authUsecase,
-	}
-
-	api := r.Group("/api/v1/auth")
-	{
-		api.POST("/login", handler.Login)
-		api.POST("/logout", handler.Logout)
-		api.GET("/me", middleware.AuthMiddleware(), handler.Me)
-	}
+func NewAuthHandler(authUsecase *usecase.AuthUseCase) *AuthHandler {
+	return &AuthHandler{authUsecase: authUsecase}
 }
 
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
+}
+
+func generateCSRFToken() string {
+	bytes := make([]byte, 32)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -48,12 +46,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	isSecure := os.Getenv("COOKIE_SECURE") == "true"
 
+	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie("token", token, 86400, "/", "", isSecure, true)
+
+	csrfToken := generateCSRFToken()
+	c.SetCookie("csrf_token", csrfToken, 86400, "/", "", isSecure, false)
 	response.Success(c, http.StatusOK, "Login successful", gin.H{
-		"id":    user.ID,
-		"name":  user.Name,
-		"email": user.Email,
-		"role":  user.Role,
+		"user": gin.H{
+			"id":    user.ID,
+			"name":  user.Name,
+			"email": user.Email,
+			"role":  user.Role,
+		},
+		"csrf_token": csrfToken,
 	},
 	)
 }
