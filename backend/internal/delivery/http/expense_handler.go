@@ -6,6 +6,7 @@ import (
 	"internal-expense-backend/internal/delivery/middleware"
 	"internal-expense-backend/internal/domain"
 	"internal-expense-backend/internal/usecase"
+	"internal-expense-backend/pkg/response"
 	"internal-expense-backend/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -56,37 +57,33 @@ func (h *ExpenseHandler) CreateExpense(c *gin.Context) {
 	file, err := c.FormFile("receipt")
 	if err == nil {
 		if file.Size > 2*1024*1024 {
-			c.JSON(http.StatusUnprocessableEntity, gin.H{"success": false, "message": "Receipt file size exceeds 2MB limit"})
+			response.Error(c, http.StatusUnprocessableEntity, "Receipt file size exceeds 2MB limit")
 			return
 		}
 
 		contentType := file.Header.Get("Content-Type")
 		if contentType != "image/jpeg" && contentType != "image/png" && contentType != "application/pdf" {
-			c.JSON(http.StatusUnprocessableEntity, gin.H{"success": false, "message": "Invalid receipt file type. Only JPEG, PNG, and PDF are allowed"})
+			response.Error(c, http.StatusUnprocessableEntity, "Invalid receipt file type. Only JPEG, PNG, and PDF are allowed")
 			return
 		}
 
 		receiptURL, err = utils.UploadToMinIO(file)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to upload receipt to cloud storage: " + err.Error()})
+			response.Error(c, http.StatusInternalServerError, "Failed to upload receipt to cloud storage: "+err.Error())
 			return
 		}
 	} else if req.IsSubmitted {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Receipt is required when submitting an expense"})
+		response.Error(c, http.StatusBadRequest, "Receipt is required when submitting an expense")
 		return
 	}
 
 	expense, err := h.expenseUsecase.Create(userID, req.Title, req.Description, req.Amount, receiptURL, req.IsSubmitted)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to create expense: " + err.Error()})
+		response.Error(c, http.StatusInternalServerError, "Failed to create expense: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"success": true,
-		"message": "Expense request created successfully",
-		"data":    expense,
-	})
+	response.Success(c, http.StatusCreated, "Expense request created successfully", expense)
 }
 
 type UpdateExpenseStatusReq struct {
@@ -101,31 +98,28 @@ func (h *ExpenseHandler) UpdateStatus(c *gin.Context) {
 
 	var req UpdateExpenseStatusReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid request body: " + err.Error()})
+		response.Error(c, http.StatusBadRequest, "Invalid request body: "+err.Error())
 		return
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid request body: " + err.Error()})
+		response.Error(c, http.StatusBadRequest, "Invalid request body: "+err.Error())
 		return
 	}
 
 	err := h.expenseUsecase.UpdateStatus(expenseID, role, userID, req.Status, req.Notes)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		response.Error(c, http.StatusBadRequest, "Failed to update expense status: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Expense status updated successfully",
-	})
+	response.Success(c, http.StatusOK, "Expense status updated successfully", nil)
 }
 
 func (h *ExpenseHandler) GetExpenses(c *gin.Context) {
 	var query GetExpenseQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid query parameters: " + err.Error()})
+		response.Error(c, http.StatusBadRequest, "Invalid query parameters: "+err.Error())
 		return
 	}
 
@@ -134,20 +128,17 @@ func (h *ExpenseHandler) GetExpenses(c *gin.Context) {
 
 	expenses, total, err := h.expenseUsecase.GetExpenses(query.Page, query.Limit, query.Search, query.Status, userID, role)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		response.Error(c, http.StatusInternalServerError, "Failed to retrieve expenses: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Expenses retrieved successfully",
-		"data": gin.H{
-			"items": expenses,
-			"meta": gin.H{
-				"page":  query.Page,
-				"limit": query.Limit,
-				"total": total,
-			},
+	response.Success(c, http.StatusOK, "Expenses retrieved successfully", gin.H{
+		"items": expenses,
+		"meta": gin.H{
+			"page":  query.Page,
+			"limit": query.Limit,
+			"total": total,
 		},
-	})
+	},
+	)
 }
