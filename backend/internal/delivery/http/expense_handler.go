@@ -3,8 +3,6 @@ package http
 import (
 	"net/http"
 
-	"internal-expense-backend/internal/delivery/middleware"
-	"internal-expense-backend/internal/domain"
 	"internal-expense-backend/internal/usecase"
 	"internal-expense-backend/pkg/response"
 	"internal-expense-backend/pkg/utils"
@@ -18,14 +16,9 @@ type ExpenseHandler struct {
 	db             *gorm.DB
 }
 
-func NewExpenseHandler(r *gin.Engine, expenseUsecase *usecase.ExpenseUseCase, db *gorm.DB) {
-	handler := &ExpenseHandler{expenseUsecase: expenseUsecase, db: db}
-
-	api := r.Group("/api/v1", middleware.AuthMiddleware())
-	{
-		api.POST("/expenses", handler.CreateExpense)
-		api.GET("/expenses", handler.GetExpenses)
-		api.PATCH("/expenses/:id/status", middleware.RBACMiddleware(domain.RoleManager, domain.RoleFinance), handler.UpdateStatus)
+func NewExpenseHandler(expenseUsecase *usecase.ExpenseUseCase) *ExpenseHandler {
+	return &ExpenseHandler{
+		expenseUsecase: expenseUsecase,
 	}
 }
 
@@ -102,10 +95,6 @@ func (h *ExpenseHandler) UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request body: "+err.Error())
-		return
-	}
 
 	err := h.expenseUsecase.UpdateStatus(expenseID, role, userID, req.Status, req.Notes)
 	if err != nil {
