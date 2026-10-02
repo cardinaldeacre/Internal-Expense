@@ -1,11 +1,18 @@
-import './App.css';
+import React from 'react';
+import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
+import {LoginPage} from './pages/LoginPage';
+import {DashboardPage} from './pages/DashboardPage';
 
-function App() {
+export const App: React.FC = () => {
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-blue-500">
-			<h1 className="text-white text-4xl font-bold">Tailwind works!</h1>
-		</div>
+		<BrowserRouter>
+			<Routes>
+				<Route path="/login" element={<LoginPage />} />
+				<Route path="/dashboard" element={<DashboardPage />} />
+				<Route path="*" element={<Navigate to="/login" replace />} />
+			</Routes>
+		</BrowserRouter>
 	);
-}
+};
 
 export default App;
