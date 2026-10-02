@@ -8,6 +8,7 @@ import (
 	"internal-expense-backend/pkg/database"
 
 	httpDelivery "internal-expense-backend/internal/delivery/http"
+	"internal-expense-backend/internal/delivery/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -23,8 +24,10 @@ func main() {
 	database.RunMigration(db)
 	database.SeedData(db)
 
-	r := gin.Default()
+	r := gin.New()
 
+	r.Use(middleware.ErrorHandlingMiddleware())
+	r.Use(gin.Logger())
 	r.SetTrustedProxies(nil)
 
 	authUsecase := usecase.NewAuthUseCase(db)
