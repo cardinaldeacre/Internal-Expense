@@ -24,6 +24,7 @@ func NewExpenseHandler(r *gin.Engine, expenseUsecase *usecase.ExpenseUseCase, db
 	api := r.Group("/api/v1", middleware.AuthMiddleware())
 	{
 		api.POST("/expenses", handler.CreateExpense)
+		api.GET("/expenses", handler.GetExpenses)
 		api.PATCH("/expenses/:id/status", middleware.RBACMiddleware(domain.RoleManager, domain.RoleFinance), handler.UpdateStatus)
 	}
 }
@@ -89,5 +90,43 @@ func (h *ExpenseHandler) UpdateStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Expense status updated successfully",
+	})
+}
+
+func (h *ExpenseHandler) GetExpenses(c *gin.Context) {
+	userID := c.GetString("user_id")
+	role := c.GetString("role")
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "10")
+	search := c.Query("search")
+	status := c.Query("status")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		limit = 10
+	}
+
+	expenses, total, err := h.expenseUsecase.GetExpenses(page, limit, search, status, userID, role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Expenses retrieved successfully",
+		"data": gin.H{
+			"items": expenses,
+			"meta": gin.H{
+				"page":  page,
+				"limit": limit,
+				"total": total,
+			},
+		},
 	})
 }
