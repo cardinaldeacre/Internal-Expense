@@ -44,6 +44,19 @@ func (r *ExpenseRepository) FindAll(page, limit int, search, status, userID, rol
 	return expenses, total, nil
 }
 
-func (r *ExpenseRepository) Db() *gorm.DB {
-	return r.db
+func (r *ExpenseRepository) FindByID(id string) (*domain.ExpenseRequest, error) {
+	var expense domain.ExpenseRequest
+	err := r.db.Preload("User").First(&expense, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &expense, nil
+}
+
+func (r *ExpenseRepository) Save(expense *domain.ExpenseRequest) error {
+	return r.db.Create(expense).Error
+}
+
+func (r *ExpenseRepository) Delete(id string) error {
+	return r.db.Delete(&domain.ExpenseRequest{}, "id = ?", id).Error
 }
