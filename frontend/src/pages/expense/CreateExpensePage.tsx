@@ -1,7 +1,7 @@
 import React, {useRef} from 'react';
 import {PageLayout} from '@/components/layout/PageLayout';
 import {CreateExpenseForm} from '@/components/expenses/CreateExpenseForm';
-import {ExpenseList} from '@/components/expenses/ExpenseList';
+import ExpenseList from '@/components/expenses/ExpenseList';
 
 export const CreateExpensePage: React.FC = () => {
 	const listRef = useRef<HTMLDivElement>(null);
