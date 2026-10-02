@@ -48,6 +48,19 @@ services:
     networks:
       - expense-net
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: expense_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - expense-net
+
 volumes:
   pgdata:
   minio_data:
