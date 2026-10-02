@@ -1,7 +1,7 @@
 import React from 'react';
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
-import {LoginPage} from './pages/LoginPage';
-import {DashboardPage} from './pages/DashboardPage';
+import {LoginPage} from '@/pages/auth/LoginPage';
+import {DashboardPage} from '@/pages/dashboard/DashboardPage';
 
 export const App: React.FC = () => {
 	return (

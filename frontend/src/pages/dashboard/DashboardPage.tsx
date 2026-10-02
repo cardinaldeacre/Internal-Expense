@@ -1,10 +1,10 @@
 import React, {useEffect, useState} from 'react';
-import api from '../services/api';
+import api from '../../services/api';
 import {useNavigate} from 'react-router-dom';
-import {Navbar} from '../components/layout/Navbar';
-import {ExpenseTable} from '../components/dashboard/ExpenseTable';
-import {Button} from '../components/ui/button';
-import {Input} from '../components/ui/input';
+import {Navbar} from '../../components/layout/Navbar';
+import {ExpenseTable} from '../../components/expenses/ExpenseTable';
+import {Button} from '../../components/ui/button';
+import {Input} from '../../components/ui/input';
 
 export const DashboardPage: React.FC = () => {
 	const [expenses, setExpenses] = useState([]);
