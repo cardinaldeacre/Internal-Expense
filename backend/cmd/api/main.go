@@ -6,6 +6,7 @@ import (
 
 	"internal-expense-backend/internal/usecase"
 	"internal-expense-backend/pkg/database"
+	"internal-expense-backend/pkg/utils"
 
 	httpDelivery "internal-expense-backend/internal/delivery/http"
 	"internal-expense-backend/internal/delivery/middleware"
@@ -23,15 +24,21 @@ func main() {
 
 	database.RunMigration(db)
 	database.SeedData(db)
+	utils.InitMinIOBucket()
 
 	r := gin.New()
 
 	r.Use(middleware.ErrorHandlingMiddleware())
 	r.Use(gin.Logger())
+	r.Use(middleware.CSRFMiddleware())
 	r.SetTrustedProxies(nil)
 
 	authUsecase := usecase.NewAuthUseCase(db)
-	httpDelivery.NewAuthHandler(r, authUsecase)
+	expenseUsecase := usecase.NewExpenseUseCase(db)
+	authHandler := httpDelivery.NewAuthHandler(authUsecase)
+	expenseHandler := httpDelivery.NewExpenseHandler(expenseUsecase)
+
+	httpDelivery.SetupRouter(r, authHandler, expenseHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {

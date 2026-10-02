@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"log"
 	"mime/multipart"
 	"os"
 	"time"
@@ -13,25 +14,65 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func UploadToMinIO(file *multipart.FileHeader) (string, error) {
+func getS3Client() (*s3.Client, string, error) {
 	ctx := context.TODO()
 	endpoint := os.Getenv("MINIO_ENDPOINT")
 	bucketName := os.Getenv("MINIO_BUCKET_NAME")
 	accessKey := os.Getenv("MINIO_ROOT_USER")
 	secretKey := os.Getenv("MINIO_ROOT_PASSWORD")
 
+	if bucketName == "" {
+		bucketName = "expense-receipts"
+	}
+
 	cfg, err := awsConfig.LoadDefaultConfig(ctx,
 		awsConfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
 		awsConfig.WithRegion("us-east-1"),
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to load S3 config: %v", err)
+		return nil, "", fmt.Errorf("failed to load S3 config: %v", err)
 	}
 
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String(fmt.Sprintf("http://%s", endpoint))
 		o.UsePathStyle = true
 	})
+
+	return client, bucketName, nil
+}
+
+func InitMinIOBucket() {
+	ctx := context.TODO()
+	client, bucketName, err := getS3Client()
+	if err != nil {
+		log.Printf("[MinIO] Gagal menginisialisasi client: %v\n", err)
+		return
+	}
+
+	_, err = client.HeadBucket(ctx, &s3.HeadBucketInput{
+		Bucket: aws.String(bucketName),
+	})
+
+	if err != nil {
+		log.Printf("[MinIO] Bucket '%s' tidak ditemukan, membuat bucket baru...\n", bucketName)
+		_, createErr := client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket: aws.String(bucketName),
+		})
+		if createErr != nil {
+			log.Fatalf("[MinIO] Gagal membuat bucket secara otomatis: %v\n", createErr)
+		}
+		log.Printf("[MinIO] Bucket '%s' berhasil dibuat secara otomatis!\n", bucketName)
+	} else {
+		log.Printf("[MinIO] Bucket '%s' sudah tersedia.\n", bucketName)
+	}
+}
+
+func UploadToMinIO(file *multipart.FileHeader) (string, error) {
+	ctx := context.TODO()
+	client, bucketName, err := getS3Client()
+	if err != nil {
+		return "", err
+	}
 
 	src, err := file.Open()
 	if err != nil {
@@ -51,5 +92,6 @@ func UploadToMinIO(file *multipart.FileHeader) (string, error) {
 		return "", fmt.Errorf("failed to upload to minio: %v", err)
 	}
 
-	return fmt.Sprintf("http://localhost:9000/%s/%s", bucketName, fileName), nil
+	endpoint := os.Getenv("MINIO_ENDPOINT")
+	return fmt.Sprintf("http://%s/%s/%s", endpoint, bucketName, fileName), nil
 }
