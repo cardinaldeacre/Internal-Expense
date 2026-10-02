@@ -2,7 +2,6 @@ package http
 
 import (
 	"net/http"
-	"strconv"
 
 	"internal-expense-backend/internal/delivery/middleware"
 	"internal-expense-backend/internal/domain"
@@ -29,19 +28,29 @@ func NewExpenseHandler(r *gin.Engine, expenseUsecase *usecase.ExpenseUseCase, db
 	}
 }
 
+type GetExpenseQuery struct {
+	Page   int    `form:"page,default=1" binding:"min=1"`
+	Limit  int    `form:"limit,default=10" binding:"min=1,max=100"`
+	Search string `form:"search" binding:"omitempty,max=100"`
+	Status string `form:"status" binding:"omitempty,oneof=DRAFT SUBMITTED APPROVED REJECTED PAID"`
+	Sort   string `form:"sort,default=created_at_desc" binding:"omitempty,oneof=created_at_desc created_at_asc amount_desc amount_asc"`
+}
+
+type CreateExpenseReq struct {
+	Title       string  `form:"title" binding:"required,min=3,max=100"`
+	Description string  `form:"description" binding:"omitempty,max=500"`
+	Amount      float64 `form:"amount" binding:"required,gt=0"`
+	IsSubmitted bool    `form:"is_submitted"`
+}
+
 func (h *ExpenseHandler) CreateExpense(c *gin.Context) {
-	userID := c.GetString("user_id")
-
-	title := c.PostForm("title")
-	description := c.PostForm("description")
-	amountStr := c.PostForm("amount")
-	isSubmitted := c.PostForm("is_submitted") == "true"
-
-	amount, err := strconv.ParseFloat(amountStr, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid amount format"})
+	var req CreateExpenseReq
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid request body: " + err.Error()})
 		return
 	}
+
+	userID := c.GetString("user_id")
 
 	var receiptURL string
 	file, err := c.FormFile("receipt")
@@ -62,11 +71,14 @@ func (h *ExpenseHandler) CreateExpense(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to upload receipt to cloud storage: " + err.Error()})
 			return
 		}
+	} else if req.IsSubmitted {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Receipt is required when submitting an expense"})
+		return
 	}
 
-	expense, err := h.expenseUsecase.Create(userID, title, description, amount, receiptURL, isSubmitted)
+	expense, err := h.expenseUsecase.Create(userID, req.Title, req.Description, req.Amount, receiptURL, req.IsSubmitted)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to create expense: " + err.Error()})
 		return
 	}
 
@@ -77,18 +89,24 @@ func (h *ExpenseHandler) CreateExpense(c *gin.Context) {
 	})
 }
 
+type UpdateExpenseStatusReq struct {
+	Status string `json:"status" binding:"required,oneof=APPROVED REJECTED PAID"`
+	Notes  string `json:"notes" binding:"omitempty,max=255"`
+}
+
 func (h *ExpenseHandler) UpdateStatus(c *gin.Context) {
 	expenseID := c.Param("id")
 	role := c.GetString("role")
 	userID := c.GetString("user_id")
 
-	var req struct {
-		Status string `json:"status" binding:"required"`
-		Notes  string `json:"notes"`
+	var req UpdateExpenseStatusReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid request body: " + err.Error()})
+		return
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid request body: " + err.Error()})
 		return
 	}
 
@@ -105,24 +123,16 @@ func (h *ExpenseHandler) UpdateStatus(c *gin.Context) {
 }
 
 func (h *ExpenseHandler) GetExpenses(c *gin.Context) {
+	var query GetExpenseQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Invalid query parameters: " + err.Error()})
+		return
+	}
+
 	userID := c.GetString("user_id")
 	role := c.GetString("role")
-	pageStr := c.DefaultQuery("page", "1")
-	limitStr := c.DefaultQuery("limit", "10")
-	search := c.Query("search")
-	status := c.Query("status")
 
-	page, err := strconv.Atoi(pageStr)
-	if err != nil {
-		page = 1
-	}
-
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		limit = 10
-	}
-
-	expenses, total, err := h.expenseUsecase.GetExpenses(page, limit, search, status, userID, role)
+	expenses, total, err := h.expenseUsecase.GetExpenses(query.Page, query.Limit, query.Search, query.Status, userID, role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": err.Error()})
 		return
@@ -134,8 +144,8 @@ func (h *ExpenseHandler) GetExpenses(c *gin.Context) {
 		"data": gin.H{
 			"items": expenses,
 			"meta": gin.H{
-				"page":  page,
-				"limit": limit,
+				"page":  query.Page,
+				"limit": query.Limit,
 				"total": total,
 			},
 		},
