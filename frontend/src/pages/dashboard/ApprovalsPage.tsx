@@ -53,19 +53,6 @@ export const ApprovalsPage: React.FC = () => {
 		}
 	};
 
-	// const handleUpdateStatus = async (id: string, newStatus: string) => {
-	// 	const notes =
-	// 		prompt(
-	// 			`Masukkan alasan ${newStatus === 'APPROVED' ? 'persetujuan' : 'penolakan'} (opsional):`
-	// 		) || '';
-	// 	try {
-	// 		await api.patch(`/expenses/${id}/status`, {status: newStatus, notes});
-	// 		fetchApprovals();
-	// 	} catch (err: any) {
-	// 		alert(err.response?.data?.message || 'Gagal mengubah status');
-	// 	}
-	// };
-
 	const handleeTriggerAction = (id: string, newStatus: any) => {
 		setActionData({id, targetStatus: newStatus});
 	};
