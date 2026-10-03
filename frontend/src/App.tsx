@@ -2,6 +2,9 @@ import React from 'react';
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
 import {LoginPage} from './pages/auth/LoginPage';
 import {DashboardPage} from './pages/dashboard/DashboardPage';
+import {MyExpensesPage} from './pages/dashboard/MyExpensesPage';
+import {ApprovalsPage} from './pages/dashboard/ApprovalsPage';
+import {DisbursementsPage} from './pages/dashboard/Disbursementspage';
 
 const ProtectedRoute = ({children}: {children: React.ReactNode}) => {
 	const user = localStorage.getItem('user');
@@ -39,6 +42,30 @@ export default function App() {
 					element={
 						<ProtectedRoute>
 							<DashboardPage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/my-expenses"
+					element={
+						<ProtectedRoute>
+							<MyExpensesPage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/approvals"
+					element={
+						<ProtectedRoute>
+							<ApprovalsPage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/disbursements"
+					element={
+						<ProtectedRoute>
+							<DisbursementsPage />
 						</ProtectedRoute>
 					}
 				/>

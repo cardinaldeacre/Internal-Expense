@@ -108,6 +108,7 @@ export const LoginPage: React.FC = () => {
 						<p>• Admin: admin@example.com / password123</p>
 						<p>• Staff: staff@example.com / password123</p>
 						<p>• Manager: manager@example.com / password123</p>
+						<p>• Finance: finance@example.com / password123</p>
 					</div>
 				</CardFooter>
 			</Card>
