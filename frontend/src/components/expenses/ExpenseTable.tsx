@@ -1,7 +1,8 @@
 import React, {useState} from 'react';
 import {Button} from '../ui/button';
 import {Badge} from '../ui/badge';
-import {ExpenseDetailModal} from './ExpenseDetailModal'; 
+import {ExpenseDetailModal} from './ExpenseDetailModal';
+import {toast} from 'sonner';
 
 interface Expense {
 	id: string;
@@ -82,7 +83,13 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
 									<Button
 										variant="outline"
 										size="sm"
-										onClick={() => onUpdateStatus(item.id, 'SUBMITTED')}>
+										onClick={() => {
+											if (!item.receipt_url) {
+												toast.warning('Harap unggah bukti pembayaran sebelum mengirim pengajuan.');
+												return;
+											}
+											onUpdateStatus(item.id, 'SUBMITTED');
+										}}>
 										Kirim Pengajuan
 									</Button>
 								)}
