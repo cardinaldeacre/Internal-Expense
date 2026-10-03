@@ -56,15 +56,6 @@ export const MyExpensesPage: React.FC = () => {
 		}
 	};
 
-	// const handleUpdateStatus = async (id: string, newStatus: string) => {
-	// 	try {
-	// 		await api.patch(`/expenses/${id}/status`, {status: newStatus});
-	// 		fetchMyExpenses();
-	// 	} catch (err: any) {
-	// 		alert(err.response?.data?.message || 'Gagal mengubah status');
-	// 	}
-	// };
-
 	const handleTriggerAction = (id: string, newStatus: string) => {
 		setActionData({id, targetStatus: newStatus});
 	};

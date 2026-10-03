@@ -5,12 +5,19 @@ import {DashboardLayout} from '../../components/layout/DashboardLayout';
 import {PageLayout} from '../../components/layout/PageLayout';
 import {ExpenseTable} from '../../components/expenses/ExpenseTable';
 import {Input} from '../../components/ui/input';
+import {toast} from 'sonner';
+import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
 
 export const DisbursementsPage: React.FC = () => {
 	const [expenses, setExpenses] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [search, setSearch] = useState('');
 	const [page] = useState(1);
+	const [actionData, setActionData] = useState<{
+		id: string;
+		targetStatus: any;
+	} | null>(null);
+	const [isUpdating, setIsUpdating] = useState(false);
 
 	const user = JSON.parse(localStorage.getItem('user') || '{}');
 	const navigate = useNavigate();
@@ -43,14 +50,27 @@ export const DisbursementsPage: React.FC = () => {
 		}
 	};
 
-	const handleUpdateStatus = async (id: string, newStatus: string) => {
-		const notes = prompt('Masukkan nomor referensi transfer / catatan (opsional):') || '';
-		try {
-			await api.patch(`/expenses/${id}/status`, {status: newStatus, notes});
-			fetchDisbursements();
-		} catch (err: any) {
-			alert(err.response?.data?.message || 'Gagal memproses pencairan');
-		}
+	const handleTriggerAction = (id: string, newStatus: string) => {
+		setActionData({id, targetStatus: newStatus});
+	};
+
+	const executeUpdateStatus = async (notes: string) => {
+		if (!actionData) return;
+		setIsUpdating(true);
+
+		const request = api
+			.patch(`/expenses/${actionData.id}/status`, {status: actionData.targetStatus, notes})
+			.finally(() => setIsUpdating(false));
+
+		toast.promise(request, {
+			loading: 'Memproses perubahan status...',
+			success: () => {
+				setActionData(null);
+				fetchDisbursements();
+				return 'Status berhasil diubah!';
+			},
+			error: (err) => err.response?.data?.message || 'Gagal mengubah status',
+		});
 	};
 
 	return (
@@ -72,10 +92,18 @@ export const DisbursementsPage: React.FC = () => {
 						expenses={expenses}
 						loading={loading}
 						userRole={user.role}
-						onUpdateStatus={handleUpdateStatus}
+						onUpdateStatus={handleTriggerAction}
 					/>
 				</div>
 			</PageLayout>
+
+			<StatusUpdateModal
+				isOpen={!!actionData}
+				actionType={actionData?.targetStatus || null}
+				onClose={() => setActionData(null)}
+				onConfirm={executeUpdateStatus}
+				isLoading={isUpdating}
+			/>
 		</DashboardLayout>
 	);
 };

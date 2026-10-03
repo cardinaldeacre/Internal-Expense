@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {Button} from '../ui/button';
 import {Badge} from '../ui/badge';
-import {ExpenseDetailModal} from './ExpenseDetailModal'; // Import modal detail
+import {ExpenseDetailModal} from './ExpenseDetailModal'; 
 
 interface Expense {
 	id: string;

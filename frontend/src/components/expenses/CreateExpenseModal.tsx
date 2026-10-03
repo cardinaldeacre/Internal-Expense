@@ -25,6 +25,13 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
 
 	const handleCreateExpense = async (e: React.FormEvent, isSubmitted: boolean) => {
 		e.preventDefault();
+		if (isSubmitted && !receiptFile) {
+			toast.error(
+				'Bukti struk (receipt) wajib dilampirkan jika ingin langsung men-submit pengajuan.'
+			);
+			return;
+		}
+
 		setLoading(true);
 
 		const formData = new FormData();

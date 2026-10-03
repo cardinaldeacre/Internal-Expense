@@ -7,6 +7,8 @@ import {CreateExpenseModal} from '../../components/expenses/CreateExpenseModal';
 import {Button} from '../../components/ui/button';
 import {Input} from '../../components/ui/input';
 import {StatCards} from '@/components/dashboard/StatCard';
+import {toast} from 'sonner';
+import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
 
 export const DashboardPage: React.FC = () => {
 	const [expenses, setExpenses] = useState<any[]>([]);
@@ -15,6 +17,11 @@ export const DashboardPage: React.FC = () => {
 	const [statusFilter, setStatusFilter] = useState('');
 	const [page, setPage] = useState(1);
 	const [showModal, setShowModal] = useState(false);
+	const [actionData, setActionData] = useState<{
+		id: string;
+		targetStatus: any;
+	} | null>(null);
+	const [isUpdating, setIsUpdating] = useState(false);
 
 	const user = JSON.parse(localStorage.getItem('user') || '{}');
 	const navigate = useNavigate();
@@ -49,14 +56,30 @@ export const DashboardPage: React.FC = () => {
 		}
 	};
 
-	const handleUpdateStatus = async (id: string, newStatus: string) => {
-		const notes = prompt('Masukkan catatan / alasan (opsional):') || '';
-		try {
-			await api.patch(`/expenses/${id}/status`, {status: newStatus, notes});
-			fetchExpenses();
-		} catch (err: any) {
-			alert(err.response?.data?.message || 'Gagal mengubah status');
-		}
+	const handleTriggerAction = (id: string, newStatus: string) => {
+		setActionData({id, targetStatus: newStatus});
+	};
+
+	const executeStatusUpdate = async (notes: string) => {
+		if (!actionData) return;
+		setIsUpdating(true);
+
+		const request = api
+			.patch(`/expenses/${actionData.id}/status`, {
+				status: actionData.targetStatus,
+				notes,
+			})
+			.finally(() => setIsUpdating(false));
+
+		toast.promise(request, {
+			loading: 'Memperbarui status...',
+			success: () => {
+				setActionData(null);
+				fetchExpenses();
+				return 'Status berhasil diperbarui!';
+			},
+			error: (err) => err.response?.data?.message || 'Gagal memperbarui status',
+		});
 	};
 
 	const totalExpense = expenses.reduce((acc, curr) => acc + (curr.amount || 0), 0);
@@ -141,7 +164,7 @@ export const DashboardPage: React.FC = () => {
 					expenses={expenses}
 					loading={loading}
 					userRole={user.role}
-					onUpdateStatus={handleUpdateStatus}
+					onUpdateStatus={handleTriggerAction}
 				/>
 			</div>
 
@@ -171,6 +194,14 @@ export const DashboardPage: React.FC = () => {
 				isOpen={showModal}
 				onClose={() => setShowModal(false)}
 				onSuccess={fetchExpenses}
+			/>
+
+			<StatusUpdateModal
+				isOpen={!!actionData}
+				actionType={actionData?.targetStatus || null}
+				onClose={() => setActionData(null)}
+				onConfirm={executeStatusUpdate}
+				isLoading={isUpdating}
 			/>
 		</DashboardLayout>
 	);
