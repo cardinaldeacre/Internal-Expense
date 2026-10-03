@@ -14,9 +14,23 @@ const api = axios.create({
     },
 });
 
+const getCSRFToken = (): string | null => {
+    const localToken = localStorage.getItem('csrf_token');
+    if (localToken && localToken !== 'undefined' && localToken !== 'null') {
+        return localToken;
+    }
+
+    const match = document.cookie.match(new RegExp('(^| )csrf_token=([^;]+)'));
+    if (match) {
+        return match[2];
+    }
+
+    return null;
+};
+
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        const csrfToken = localStorage.getItem('csrf_token');
+        const csrfToken = getCSRFToken();
         const method = config.method ? config.method.toUpperCase() : '';
 
         if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
