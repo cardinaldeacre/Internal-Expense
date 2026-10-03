@@ -28,7 +28,7 @@ export const LoginPage: React.FC = () => {
 
 		try {
 			const res = await api.post('/auth/login', {email, password});
-			const {csrfToken, user} = res.headers['x-csrf-token'];
+			const {csrfToken, user} = res.data.data;
 
 			localStorage.setItem('csrf_token', csrfToken);
 			localStorage.setItem('user', JSON.stringify(user));

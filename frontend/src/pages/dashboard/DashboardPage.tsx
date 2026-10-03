@@ -13,7 +13,6 @@ export const DashboardPage: React.FC = () => {
 	const [statusFilter, setStatusFilter] = useState('');
 	const [page, setPage] = useState(1);
 
-	// Form Modal State
 	const [showModal, setShowModal] = useState(false);
 	const [title, setTitle] = useState('');
 	const [description, setDescription] = useState('');
@@ -84,7 +83,6 @@ export const DashboardPage: React.FC = () => {
 			<Navbar user={user} onLogout={handleLogout} />
 
 			<main className="max-w-7xl mx-auto px-6 mt-8">
-				{/* Filter & Action Bar */}
 				<div className="flex justify-between items-center mb-6">
 					<div className="flex gap-3">
 						<Input
@@ -116,7 +114,6 @@ export const DashboardPage: React.FC = () => {
 					)}
 				</div>
 
-				{/* Tabel Data */}
 				<ExpenseTable
 					expenses={expenses}
 					loading={loading}
@@ -145,7 +142,6 @@ export const DashboardPage: React.FC = () => {
 				</div>
 			</main>
 
-			{/* Modal Sederhana untuk Create */}
 			{showModal && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
 					<div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl border border-zinc-200">

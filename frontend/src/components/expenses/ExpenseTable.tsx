@@ -47,7 +47,7 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
 								<p className="text-xs text-zinc-500">{item.Description}</p>
 								{item.Notes && <p className="text-xs text-red-500 mt-1">Catatan: {item.Notes}</p>}
 							</td>
-							<td className="p-4 font-semibold text-zinc-700">Rp {item.Amount.toLocaleString()}</td>
+							<td className="p-4 font-semibold text-zinc-700">Rp {item.amount.toLocaleString()}</td>
 							<td className="p-4">
 								<span
 									className={`px-2.5 py-1 rounded-full text-xs font-bold ${
