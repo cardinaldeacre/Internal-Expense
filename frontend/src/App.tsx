@@ -5,6 +5,7 @@ import {DashboardPage} from './pages/dashboard/DashboardPage';
 import {MyExpensesPage} from './pages/dashboard/MyExpensesPage';
 import {ApprovalsPage} from './pages/dashboard/ApprovalsPage';
 import {DisbursementsPage} from './pages/dashboard/Disbursementspage';
+import {Toaster} from '@/components/ui/sonner';
 
 const ProtectedRoute = ({children}: {children: React.ReactNode}) => {
 	const user = localStorage.getItem('user');
@@ -69,9 +70,11 @@ export default function App() {
 						</ProtectedRoute>
 					}
 				/>
+				<Route path="/" element={<Navigate to="/dashboard" replace />} />
 
 				<Route path="*" element={<Navigate to="/dashboard" replace />} />
 			</Routes>
+			<Toaster richColors position="top-right" />
 		</BrowserRouter>
 	);
 }
