@@ -5,12 +5,20 @@ import {DashboardLayout} from '../../components/layout/DashboardLayout';
 import {PageLayout} from '../../components/layout/PageLayout';
 import {ExpenseTable} from '../../components/expenses/ExpenseTable';
 import {Input} from '../../components/ui/input';
+import {toast} from 'sonner';
+import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
 
 export const ApprovalsPage: React.FC = () => {
 	const [expenses, setExpenses] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [search, setSearch] = useState('');
 	const [page] = useState(1);
+
+	const [actionData, setActionData] = useState<{
+		id: string;
+		targetStatus: any;
+	} | null>(null);
+	const [isUpdating, setIsUpdating] = useState(false);
 
 	const user = JSON.parse(localStorage.getItem('user') || '{}');
 	const navigate = useNavigate();
@@ -45,17 +53,42 @@ export const ApprovalsPage: React.FC = () => {
 		}
 	};
 
-	const handleUpdateStatus = async (id: string, newStatus: string) => {
-		const notes =
-			prompt(
-				`Masukkan alasan ${newStatus === 'APPROVED' ? 'persetujuan' : 'penolakan'} (opsional):`
-			) || '';
-		try {
-			await api.patch(`/expenses/${id}/status`, {status: newStatus, notes});
-			fetchApprovals();
-		} catch (err: any) {
-			alert(err.response?.data?.message || 'Gagal mengubah status');
-		}
+	// const handleUpdateStatus = async (id: string, newStatus: string) => {
+	// 	const notes =
+	// 		prompt(
+	// 			`Masukkan alasan ${newStatus === 'APPROVED' ? 'persetujuan' : 'penolakan'} (opsional):`
+	// 		) || '';
+	// 	try {
+	// 		await api.patch(`/expenses/${id}/status`, {status: newStatus, notes});
+	// 		fetchApprovals();
+	// 	} catch (err: any) {
+	// 		alert(err.response?.data?.message || 'Gagal mengubah status');
+	// 	}
+	// };
+
+	const handleeTriggerAction = (id: string, newStatus: any) => {
+		setActionData({id, targetStatus: newStatus});
+	};
+
+	const execeteUpdateStatus = async (notes: string) => {
+		if (!actionData) return;
+		setIsUpdating(true);
+
+		toast.promise(
+			api.patch(`/expenses/${actionData.id}/status`, {
+				status: actionData.targetStatus,
+				notes,
+			}),
+			{
+				loading: 'Memperbarui status...',
+				success: () => {
+					setActionData(null);
+					fetchApprovals();
+					return 'Status berhasil diperbarui menjadi ' + actionData.targetStatus + '!';
+				},
+				error: (err) => err.response?.data?.message || 'Gagal memperbarui status',
+			}
+		);
 	};
 
 	return (
@@ -77,10 +110,18 @@ export const ApprovalsPage: React.FC = () => {
 						expenses={expenses}
 						loading={loading}
 						userRole={user.role}
-						onUpdateStatus={handleUpdateStatus}
+						onUpdateStatus={handleeTriggerAction}
 					/>
 				</div>
 			</PageLayout>
+
+			<StatusUpdateModal
+				isOpen={!!actionData}
+				actionType={actionData?.targetStatus || null}
+				onClose={() => setActionData(null)}
+				onConfirm={execeteUpdateStatus}
+				isLoading={isUpdating}
+			/>
 		</DashboardLayout>
 	);
 };

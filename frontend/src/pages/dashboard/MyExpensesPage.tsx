@@ -7,6 +7,8 @@ import {ExpenseTable} from '../../components/expenses/ExpenseTable';
 import {CreateExpenseModal} from '../../components/expenses/CreateExpenseModal';
 import {Button} from '../../components/ui/button';
 import {Input} from '../../components/ui/input';
+import {toast} from 'sonner';
+import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
 
 export const MyExpensesPage: React.FC = () => {
 	const [expenses, setExpenses] = useState([]);
@@ -15,6 +17,11 @@ export const MyExpensesPage: React.FC = () => {
 	const [statusFilter, setStatusFilter] = useState('');
 	const [page] = useState(1);
 	const [showModal, setShowModal] = useState(false);
+	const [actionData, setActionData] = useState<{
+		id: string;
+		targetStatus: any;
+	} | null>(null);
+	const [isUpdating, setIsUpdating] = useState(false);
 
 	const user = JSON.parse(localStorage.getItem('user') || '{}');
 	const navigate = useNavigate();
@@ -49,13 +56,40 @@ export const MyExpensesPage: React.FC = () => {
 		}
 	};
 
-	const handleUpdateStatus = async (id: string, newStatus: string) => {
-		try {
-			await api.patch(`/expenses/${id}/status`, {status: newStatus});
-			fetchMyExpenses();
-		} catch (err: any) {
-			alert(err.response?.data?.message || 'Gagal mengubah status');
-		}
+	// const handleUpdateStatus = async (id: string, newStatus: string) => {
+	// 	try {
+	// 		await api.patch(`/expenses/${id}/status`, {status: newStatus});
+	// 		fetchMyExpenses();
+	// 	} catch (err: any) {
+	// 		alert(err.response?.data?.message || 'Gagal mengubah status');
+	// 	}
+	// };
+
+	const handleTriggerAction = (id: string, newStatus: string) => {
+		setActionData({id, targetStatus: newStatus});
+	};
+
+	const executeUpdateStatus = async (notes: string) => {
+		if (!actionData) return;
+
+		setIsUpdating(true);
+
+		const request = api
+			.patch(`/expenses/${actionData.id}/status`, {
+				status: actionData.targetStatus,
+				notes,
+			})
+			.finally(() => setIsUpdating(false));
+
+		toast.promise(request, {
+			loading: 'Memperbarui status...',
+			success: () => {
+				setActionData(null);
+				fetchMyExpenses();
+				return 'Status berhasil diperbarui!';
+			},
+			error: (err) => err.response?.data?.message || 'Gagal memperbarui status',
+		});
 	};
 
 	return (
@@ -96,7 +130,7 @@ export const MyExpensesPage: React.FC = () => {
 						expenses={expenses}
 						loading={loading}
 						userRole={user.role}
-						onUpdateStatus={handleUpdateStatus}
+						onUpdateStatus={handleTriggerAction}
 					/>
 				</div>
 			</PageLayout>
@@ -105,6 +139,14 @@ export const MyExpensesPage: React.FC = () => {
 				isOpen={showModal}
 				onClose={() => setShowModal(false)}
 				onSuccess={fetchMyExpenses}
+			/>
+
+			<StatusUpdateModal
+				isOpen={!!actionData}
+				actionType={actionData?.targetStatus || null}
+				onClose={() => setActionData(null)}
+				onConfirm={executeUpdateStatus}
+				isLoading={isUpdating}
 			/>
 		</DashboardLayout>
 	);

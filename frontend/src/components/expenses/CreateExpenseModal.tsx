@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import api from '../../services/api';
 import {Button} from '../ui/button';
 import {Input} from '../ui/input';
+import {toast} from 'sonner';
 
 interface CreateExpenseModalProps {
 	isOpen: boolean;
@@ -33,20 +34,24 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
 		formData.append('is_submitted', isSubmitted ? 'true' : 'false');
 		if (receiptFile) formData.append('receipt', receiptFile);
 
-		try {
-			await api.post('/expenses', formData, {headers: {'Content-Type': 'multipart/form-data'}});
-
-			setTitle('');
-			setDescription('');
-			setAmount('');
-			setReceiptFile(null);
-			onSuccess();
-			onClose();
-		} catch (err: any) {
-			alert(err.response?.data?.message || 'Gagal membuat pengajuan');
-		} finally {
-			setLoading(false);
-		}
+		toast.promise(
+			api
+				.post('/expenses', formData, {headers: {'Content-Type': 'multipart/form-data'}})
+				.finally(() => setLoading(false)),
+			{
+				loading: 'Menyimpan pengajuan...',
+				success: () => {
+					setTitle('');
+					setDescription('');
+					setAmount('');
+					setReceiptFile(null);
+					onSuccess();
+					onClose();
+					return isSubmitted ? 'Pengajuan berhasil dikirim!' : 'Draft berhasil disimpan!';
+				},
+				error: (err) => err.response?.data?.message || 'Gagal menyimpan pengajuan',
+			}
+		);
 	};
 
 	return (
