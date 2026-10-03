@@ -2,6 +2,8 @@ package http
 
 import (
 	"internal-expense-backend/internal/delivery/middleware"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -9,14 +11,24 @@ import (
 )
 
 func SetupRouter(r *gin.Engine, authHandler *AuthHandler, expenseHandler *ExpenseHandler) {
+	originsEnv := os.Getenv("ALLOWED_ORIGINS")
+
+	if originsEnv != "" {
+		originsEnv = "http://localhost:5173,http://localhost:3000"
+	}
+
+	allowedOrigins := strings.Split(originsEnv, ",")
+
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:3000"},
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	r.Static("/uploads", "./uploads")
 
 	api := r.Group("/api/v1")
 
