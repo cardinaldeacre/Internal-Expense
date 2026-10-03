@@ -6,9 +6,10 @@ import {ExpenseTable} from '../../components/expenses/ExpenseTable';
 import {CreateExpenseModal} from '../../components/expenses/CreateExpenseModal';
 import {Button} from '../../components/ui/button';
 import {Input} from '../../components/ui/input';
+import {StatCards} from '@/components/dashboard/StatCard';
 
 export const DashboardPage: React.FC = () => {
-	const [expenses, setExpenses] = useState([]);
+	const [expenses, setExpenses] = useState<any[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [search, setSearch] = useState('');
 	const [statusFilter, setStatusFilter] = useState('');
@@ -58,9 +59,23 @@ export const DashboardPage: React.FC = () => {
 		}
 	};
 
+	const totalExpense = expenses.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+	const pendingCount = expenses.filter((e) => e.status === 'SUBMITTED').length;
+	const approvedCount = expenses.filter((e) => e.status === 'APPROVED').length;
+	const paidTotal = expenses
+		.filter((e) => e.status === 'PAID')
+		.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
 	return (
 		<DashboardLayout user={user} onLogout={handleLogout}>
 			<div className="mb-8">
+				<StatCards
+					totalExpense={totalExpense}
+					pendingCount={pendingCount}
+					approvedCount={approvedCount}
+					paidTotal={paidTotal}
+				/>
+
 				{user.role === 'STAFF' && (
 					<div className="p-5 bg-white rounded-xl border border-zinc-200 shadow-sm flex items-center justify-between">
 						<div>
