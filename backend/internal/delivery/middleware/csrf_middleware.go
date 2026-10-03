@@ -10,6 +10,11 @@ import (
 
 func CSRFMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
 		method := c.Request.Method
 		if method == "GET" || method == "HEAD" || method == "OPTIONS" {
 			c.Next()

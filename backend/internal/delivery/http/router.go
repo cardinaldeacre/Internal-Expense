@@ -2,6 +2,7 @@ package http
 
 import (
 	"internal-expense-backend/internal/delivery/middleware"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,7 @@ func SetupRouter(r *gin.Engine, authHandler *AuthHandler, expenseHandler *Expens
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
 	}))
 
 	api := r.Group("/api/v1")
@@ -21,16 +23,17 @@ func SetupRouter(r *gin.Engine, authHandler *AuthHandler, expenseHandler *Expens
 	// Public Routes
 	api.POST("/auth/login", authHandler.Login)
 
-	// Protected Routes
-	protected := api.Group("")
-	protected.Use(middleware.AuthMiddleware())
-	protected.Use(middleware.CSRFMiddleware())
-	// Auth
-	protected.POST("/auth/logout", authHandler.Logout)
-	protected.GET("/auth/me", authHandler.Me)
+	protectedCSRF := api.Group("")
+	protectedCSRF.Use(middleware.AuthMiddleware())
+	protectedCSRF.Use(middleware.CSRFMiddleware())
 
-	// Expenses
-	protected.GET("/expenses", expenseHandler.GetExpenses)
-	protected.POST("/expenses", expenseHandler.CreateExpense)
-	protected.PATCH("/expenses/:id/status", expenseHandler.UpdateStatus)
+	protectedCSRF.POST("/expenses", expenseHandler.CreateExpense)
+	protectedCSRF.PATCH("/expenses/:id/status", expenseHandler.UpdateStatus)
+
+	protectedAuth := api.Group("")
+	protectedAuth.Use(middleware.AuthMiddleware())
+
+	protectedAuth.POST("/auth/logout", authHandler.Logout)
+	protectedAuth.GET("/auth/me", authHandler.Me)
+	protectedAuth.GET("/expenses", expenseHandler.GetExpenses)
 }

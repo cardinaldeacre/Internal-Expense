@@ -29,11 +29,19 @@ api.interceptors.request.use(
     }
 );
 
+declare module 'axios' {
+    export interface InternalAxiosRequestConfig {
+        skipGlobalError?: boolean;
+    }
+}
+
 api.interceptors.response.use(
     (response) => response,
     (error: AxiosError<ErrorResponseData>) => {
         const status = error.response ? error.response.status : null;
         const errorData = error.response?.data;
+
+        const skipGlobalError = error.config?.skipGlobalError ?? false;
 
         switch (status) {
             case 401:
@@ -45,7 +53,9 @@ api.interceptors.response.use(
                 break;
 
             case 403:
-                alert(errorData?.message || 'Akses ditolak: Anda tidak memiliki hak akses untuk tindakan ini.');
+                if (!skipGlobalError) {
+                    alert(errorData?.message || 'Akses ditolak: Anda tidak memiliki hak akses untuk tindakan ini.');
+                }
                 break;
 
             case 400:
@@ -71,5 +81,4 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
-
 export default api;

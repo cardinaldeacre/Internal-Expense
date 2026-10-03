@@ -30,7 +30,6 @@ func main() {
 
 	r.Use(middleware.ErrorHandlingMiddleware())
 	r.Use(gin.Logger())
-	r.Use(middleware.CSRFMiddleware())
 	r.SetTrustedProxies(nil)
 
 	authUsecase := usecase.NewAuthUseCase(db)

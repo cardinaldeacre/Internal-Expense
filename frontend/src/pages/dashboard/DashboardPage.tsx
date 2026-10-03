@@ -41,9 +41,17 @@ export const DashboardPage: React.FC = () => {
 	}, [page, search, statusFilter]);
 
 	const handleLogout = async () => {
-		await api.post('/auth/logout');
-		localStorage.removeItem('user');
-		navigate('/login');
+		try {
+			await api.post('/auth/logout', {}, {
+				skipGlobalError: true,
+			} as any);
+		} catch (err) {
+			console.warn('Sesi server sudah berakhir, membersihkan sesi lokal...');
+		} finally {
+			localStorage.removeItem('csrf_token');
+			localStorage.removeItem('user');
+			navigate('/login');
+		}
 	};
 
 	const handleCreateExpense = async (e: React.FormEvent, isSubmitted: boolean) => {
