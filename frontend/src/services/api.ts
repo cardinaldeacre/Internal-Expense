@@ -1,4 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { toast } from 'sonner';
 
 interface ErrorResponseData {
     success: boolean;
@@ -68,26 +69,26 @@ api.interceptors.response.use(
 
             case 403:
                 if (!skipGlobalError) {
-                    alert(errorData?.message || 'Akses ditolak: Anda tidak memiliki hak akses untuk tindakan ini.');
+                    toast.error(errorData?.message || 'Akses Ditolak: Anda tidak memiliki hak akses.');
                 }
                 break;
 
             case 400:
             case 422:
-                console.warn('Validasi input gagal:', errorData?.message || error.message);
+                toast.warning(`Validasi input gagal: ${errorData?.message || error.message}`);
                 break;
 
             case 429:
-                alert('Terlalu banyak permintaan. Mohon tunggu beberapa saat sebelum mencoba lagi.');
+                toast.warning('Terlalu banyak permintaan. Mohon tunggu beberapa saat sebelum mencoba lagi.');
                 break;
 
             case 500:
-                alert('Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.');
+                toast.error('Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.');
                 break;
 
             default:
                 if (!error.response) {
-                    alert('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+                    toast.error('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
                 }
                 break;
         }
