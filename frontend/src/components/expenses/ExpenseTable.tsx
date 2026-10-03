@@ -1,12 +1,16 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {Button} from '../ui/button';
 import {Badge} from '../ui/badge';
+import {ExpenseDetailModal} from './ExpenseDetailModal'; // Import modal detail
 
 interface Expense {
 	id: string;
 	title: string;
+	description?: string;
 	amount: number;
 	status: string;
+	receipt_url?: string;
+	notes?: string;
 	user?: {name: string};
 	created_at: string;
 }
@@ -24,6 +28,8 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
 	userRole,
 	onUpdateStatus,
 }) => {
+	const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+
 	if (loading) {
 		return <div className="p-8 text-center text-zinc-500">Memuat data pengeluaran...</div>;
 	}
@@ -107,7 +113,7 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
 									</Button>
 								)}
 
-								<Button variant="outline" size="sm">
+								<Button variant="outline" size="sm" onClick={() => setSelectedExpense(item)}>
 									Detail
 								</Button>
 							</td>
@@ -115,6 +121,12 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
 					))}
 				</tbody>
 			</table>
+
+			<ExpenseDetailModal
+				isOpen={!!selectedExpense}
+				onClose={() => setSelectedExpense(null)}
+				expense={selectedExpense as any}
+			/>
 		</div>
 	);
 };
