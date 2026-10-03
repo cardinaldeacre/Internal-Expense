@@ -40,21 +40,37 @@ func (u *ExpenseUseCase) Create(userID string, title, description string, amount
 
 func (u *ExpenseUseCase) UpdateStatus(expenseID, role, actionUserID string, newStatus string, notes string) error {
 	var expense domain.ExpenseRequest
+
 	if err := u.db.First(&expense, "id = ?", expenseID).Error; err != nil {
 		return errors.New("expense request not found")
 	}
 
-	switch role {
-	case domain.RoleManager:
-		if newStatus != domain.StatusApproved && newStatus != domain.StatusRejected {
-			return errors.New("manager can only approve or reject requests")
+	if role == "STAFF" {
+		if newStatus != "SUBMITTED" {
+			return errors.New("staff does not have permission to change request status to " + newStatus)
 		}
-	case domain.RoleFinance:
-		if newStatus != domain.StatusPaid {
-			return errors.New("finance can only mark requests as paid")
+
+		if expense.UserID != actionUserID || expense.Status != "DRAFT" {
+			return errors.New("invalid operation: unauthorized or not in DRAFT status")
 		}
-	case domain.RoleStaff:
-		return errors.New("staff does not have permission to change request status")
+	}
+
+	if role == "MANAGER" {
+		if newStatus != "APPROVED" && newStatus != "REJECTED" {
+			return errors.New("manager can only approve or reject")
+		}
+		if expense.Status != "SUBMITTED" {
+			return errors.New("manager can only process SUBMITTED expenses")
+		}
+	}
+
+	if role == "FINANCE" {
+		if newStatus != "PAID" {
+			return errors.New("finance can only process payments")
+		}
+		if expense.Status != "APPROVED" {
+			return errors.New("finance can only process APPROVED expenses")
+		}
 	}
 
 	expense.Status = newStatus

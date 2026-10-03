@@ -80,7 +80,7 @@ func (h *ExpenseHandler) CreateExpense(c *gin.Context) {
 }
 
 type UpdateExpenseStatusReq struct {
-	Status string `json:"status" binding:"required,oneof=APPROVED REJECTED PAID"`
+	Status string `json:"status" binding:"required,oneof=APPROVED REJECTED SUBMITTED PAID"`
 	Notes  string `json:"notes" binding:"omitempty,max=255"`
 }
 
@@ -94,7 +94,6 @@ func (h *ExpenseHandler) UpdateStatus(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, "Invalid request body: "+err.Error())
 		return
 	}
-
 
 	err := h.expenseUsecase.UpdateStatus(expenseID, role, userID, req.Status, req.Notes)
 	if err != nil {
