@@ -21,22 +21,20 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
 	description,
 	actions,
 	children,
-	maxWidth = 'lg',
+	maxWidth = '2xl',
 }) => {
 	return (
-		<div className="min-h-screen bg-zinc-50">
-			<header className="border-b bg-white">
-				<div
-					className={`mx-auto flex items-center justify-between gap-4 px-6 py-5 ${maxWidthMap[maxWidth]}`}>
-					<div>
-						<h1 className="text-2xl font-bold tracking-tight text-zinc-900">{title}</h1>
-						{description && <p className="text-sm text-zinc-500 mt-1">{description}</p>}
-					</div>
-					{actions && <div className="flex items-center gap-2">{actions}</div>}
+		<div className="w-full flex flex-col gap-6">
+			<div
+				className={`w-full mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${maxWidthMap[maxWidth]}`}>
+				<div>
+					<h1 className="text-2xl font-bold tracking-tight text-zinc-900">{title}</h1>
+					{description && <p className="text-sm text-zinc-500 mt-1">{description}</p>}
 				</div>
-			</header>
+				{actions && <div className="flex items-center gap-2">{actions}</div>}
+			</div>
 
-			<main className={`mx-auto px-6 py-8 ${maxWidthMap[maxWidth]}`}>{children}</main>
+			<div className={`w-full mx-auto ${maxWidthMap[maxWidth]}`}>{children}</div>
 		</div>
 	);
 };
