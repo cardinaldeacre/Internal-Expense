@@ -1,0 +1,303 @@
+definitions:
+  response.APIResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+info:
+  contact: {}
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentikasi user dengan email dan password, mengembalikan access
+        token & refresh token.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+            password:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Login user
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Menghapus sesi user / invalidate token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Auth
+  /auth/me:
+    get:
+      description: Mengambil data user yang sedang login.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - Auth
+  /expenses:
+    get:
+      consumes:
+      - application/json
+      description: Mengambil data pengeluaran dengan filter status, pencarian, dan
+        pagination.
+      parameters:
+      - default: 1
+        description: Nomor Halaman
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: Jumlah Data
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - description: Cari berdasarkan judul
+        in: query
+        maxLength: 100
+        name: search
+        type: string
+      - description: Filter status
+        enum:
+        - DRAFT
+        - SUBMITTED
+        - APPROVED
+        - REJECTED
+        - PAID
+        in: query
+        name: status
+        type: string
+      - default: created_at_desc
+        description: Urutan data
+        enum:
+        - created_at_desc
+        - created_at_asc
+        - amount_desc
+        - amount_asc
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Ambil daftar pengajuan
+      tags:
+      - Expenses
+    post:
+      consumes:
+      - multipart/form-data
+      description: Membuat pengajuan pengeluaran baru. Jika is_submitted=true, struk
+        (receipt) wajib diunggah. Mendukung upload file struk (JPEG, PNG, PDF, max
+        2MB).
+      parameters:
+      - description: Judul pengeluaran
+        in: formData
+        maxLength: 100
+        minLength: 3
+        name: title
+        required: true
+        type: string
+      - description: Deskripsi pengeluaran
+        in: formData
+        maxLength: 500
+        name: description
+        type: string
+      - description: Jumlah pengeluaran
+        in: formData
+        minimum: 1
+        name: amount
+        required: true
+        type: number
+      - description: Status apakah langsung diajukan
+        in: formData
+        name: is_submitted
+        type: boolean
+      - description: File struk (JPEG, PNG, PDF, max 2MB)
+        in: formData
+        name: receipt
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Buat pengajuan pengeluaran baru
+      tags:
+      - Expenses
+  /expenses/{id}/receipt:
+    get:
+      description: Mengambil file struk (receipt) dari cloud storage berdasarkan ID
+        pengeluaran.
+      parameters:
+      - description: Expense ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - image/jpeg
+      - image/png
+      - application/pdf
+      responses:
+        "200":
+          description: Receipt file
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Ambil file struk pengeluaran
+      tags:
+      - Expenses
+  /expenses/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Mengubah status pengajuan pengeluaran.
+      parameters:
+      - description: Expense ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Request body
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            notes:
+              type: string
+            status:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update status pengajuan pengeluaran
+      tags:
+      - Expenses
+swagger: "2.0"

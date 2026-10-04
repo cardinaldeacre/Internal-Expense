@@ -8,6 +8,10 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "internal-expense-backend/docs"
 )
 
 func SetupRouter(r *gin.Engine, authHandler *AuthHandler, expenseHandler *ExpenseHandler) {
@@ -29,7 +33,7 @@ func SetupRouter(r *gin.Engine, authHandler *AuthHandler, expenseHandler *Expens
 	}))
 
 	r.Static("/uploads", "./uploads")
-
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	api := r.Group("/api/v1")
 
 	// Public Routes
