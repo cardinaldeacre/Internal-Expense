@@ -3,18 +3,7 @@ import {Button} from '../ui/button';
 import {Badge} from '../ui/badge';
 import {ExpenseDetailModal} from './ExpenseDetailModal';
 import {toast} from 'sonner';
-
-interface Expense {
-	id: string;
-	title: string;
-	description?: string;
-	amount: number;
-	status: string;
-	receipt_url?: string;
-	notes?: string;
-	user?: {name: string};
-	created_at: string;
-}
+import type {Expense} from '@/types/expense';
 
 interface ExpenseTableProps {
 	expenses: Expense[];

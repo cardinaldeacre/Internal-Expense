@@ -10,18 +10,27 @@ import {
 import {Button} from '../ui/button';
 import {Label} from '../ui/label';
 import {Textarea} from '../ui/textarea';
-
-export type StatusAction = 'APPROVED' | 'REJECTED' | 'PAID';
+import type {ExpenseStatus} from '@/types/expense';
 
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	action: StatusAction | null;
+	action: ExpenseStatus | null;
 	onConfirm: (notes: string) => void;
 	loading?: boolean;
 };
 
-const actionCopy: Record<StatusAction, {title: string; desc: string; cta: string}> = {
+const actionCopy: Record<ExpenseStatus, {title: string; desc: string; cta: string}> = {
+	DRAFT: {
+		title: 'Kembalikan ke Draft',
+		desc: 'Pengajuan akan ditandai sebagai DRAFT.',
+		cta: 'Set as Draft',
+	},
+	SUBMITTED: {
+		title: 'Kirim Pengajuan',
+		desc: 'Pengajuan akan ditandai sebagai SUBMITTED.',
+		cta: 'Submit',
+	},
 	APPROVED: {
 		title: 'Setujui Pengajuan',
 		desc: 'Pengajuan akan ditandai sebagai APPROVED.',

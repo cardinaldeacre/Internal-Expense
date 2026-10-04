@@ -1,11 +1,11 @@
 import React from 'react';
 import {Button} from '../ui/button';
-import type {StatusAction} from './ExpenseStatusDialog';
+import type {ExpenseStatus} from '@/types/expense';
 
 type Props = {
 	status: string;
 	role?: string;
-	onAction: (action: StatusAction) => void;
+	onAction: (action: ExpenseStatus) => void;
 };
 
 export const ExpenseRowActions: React.FC<Props> = ({status, role, onAction}) => {

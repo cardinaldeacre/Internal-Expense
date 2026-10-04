@@ -1,7 +1,6 @@
 import React from 'react';
 import {Badge} from '../ui/badge';
-
-export type ExpenseStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PAID';
+import type {ExpenseStatus} from '@/types/expense';
 
 const statusStyles: Record<ExpenseStatus, string> = {
 	DRAFT: 'bg-zinc-100 text-zinc-700 border-zinc-200',

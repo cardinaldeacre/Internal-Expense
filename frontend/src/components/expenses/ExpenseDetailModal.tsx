@@ -3,18 +3,7 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription} fro
 import {Badge} from '../ui/badge';
 import {Separator} from '../ui/separator';
 import ReceiptImage from './ReceiptImage';
-
-interface Expense {
-	id: string;
-	title: string;
-	description: string;
-	amount: number;
-	status: string;
-	receipt_url?: string;
-	notes?: string;
-	user?: {name: string};
-	created_at: string;
-}
+import type {Expense} from '@/types/expense';
 
 interface ExpenseDetailModalProps {
 	isOpen: boolean;

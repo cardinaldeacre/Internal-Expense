@@ -5,15 +5,8 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../
 import {Alert, AlertDescription} from '../ui/alert';
 import {ExpenseStatusBadge} from './ExpenseStatusBadge';
 import {ExpenseRowActions} from './ExpenseRowActions';
-import {ExpenseStatusDialog, type StatusAction} from './ExpenseStatusDialog';
-
-interface Expense {
-	id: string;
-	title: string;
-	amount: number;
-	status: string;
-	receipt_url?: string;
-}
+import {ExpenseStatusDialog} from './ExpenseStatusDialog';
+import type {Expense, ExpenseStatus} from '@/types/expense';
 
 export default function ExpenseList({refreshKey = 0}: {refreshKey?: number}) {
 	const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -21,7 +14,7 @@ export default function ExpenseList({refreshKey = 0}: {refreshKey?: number}) {
 	const [error, setError] = useState('');
 
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const [dialogAction, setDialogAction] = useState<StatusAction | null>(null);
+	const [dialogAction, setDialogAction] = useState<ExpenseStatus | null>(null);
 	const [dialogTargetId, setDialogTargetId] = useState<string | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 
@@ -44,7 +37,7 @@ export default function ExpenseList({refreshKey = 0}: {refreshKey?: number}) {
 		fetchExpenses();
 	}, [refreshKey]);
 
-	const openDialog = (id: string, action: StatusAction) => {
+	const openDialog = (id: string, action: ExpenseStatus) => {
 		setDialogTargetId(id);
 		setDialogAction(action);
 		setDialogOpen(true);
