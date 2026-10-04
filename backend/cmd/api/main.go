@@ -7,11 +7,13 @@ import (
 	"internal-expense-backend/internal/usecase"
 	"internal-expense-backend/pkg/database"
 	"internal-expense-backend/pkg/utils"
+	"internal-expense-backend/worker"
 
 	httpDelivery "internal-expense-backend/internal/delivery/http"
 	"internal-expense-backend/internal/delivery/middleware"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hibiken/asynq"
 	"github.com/joho/godotenv"
 )
 
@@ -32,12 +34,34 @@ func main() {
 	r.Use(gin.Logger())
 	r.SetTrustedProxies(nil)
 
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		log.Fatal("REDIS_ADDR environment variable is not set")
+		return
+	}
+
+	redisOpt := asynq.RedisClientOpt{Addr: redisAddr}
+	asynqClient := asynq.NewClient(redisOpt)
+	defer asynqClient.Close()
+
+	srv := asynq.NewServer(redisOpt, asynq.Config{
+		Concurrency: 10,
+	})
+
 	authUsecase := usecase.NewAuthUseCase(db)
 	expenseUsecase := usecase.NewExpenseUseCase(db)
 	authHandler := httpDelivery.NewAuthHandler(authUsecase)
-	expenseHandler := httpDelivery.NewExpenseHandler(expenseUsecase)
+	expenseHandler := httpDelivery.NewExpenseHandler(expenseUsecase, asynqClient)
 
 	httpDelivery.SetupRouter(r, authHandler, expenseHandler)
+	mux := asynq.NewServeMux()
+	mux.HandleFunc(worker.TypeEmailNotification, worker.HandleEmailNotificationTask)
+
+	go func() {
+		if err := srv.Run(mux); err != nil {
+			log.Fatalf("Gagal menjalankan Asynq worker: %v", err)
+		}
+	}()
 
 	port := os.Getenv("PORT")
 	if port == "" {

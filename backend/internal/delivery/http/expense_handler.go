@@ -11,17 +11,21 @@ import (
 	"internal-expense-backend/internal/usecase"
 	"internal-expense-backend/pkg/response"
 	"internal-expense-backend/pkg/utils"
+	"internal-expense-backend/worker"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hibiken/asynq"
 )
 
 type ExpenseHandler struct {
 	expenseUsecase *usecase.ExpenseUseCase
+	asynqClient    *asynq.Client
 }
 
-func NewExpenseHandler(expenseUsecase *usecase.ExpenseUseCase) *ExpenseHandler {
+func NewExpenseHandler(expenseUsecase *usecase.ExpenseUseCase, client *asynq.Client) *ExpenseHandler {
 	return &ExpenseHandler{
 		expenseUsecase: expenseUsecase,
+		asynqClient:    client,
 	}
 }
 
@@ -130,6 +134,20 @@ func (h *ExpenseHandler) UpdateStatus(c *gin.Context) {
 			err,
 		))
 		return
+	}
+
+	if req.Status == "APPROVED" || req.Status == "REJECTED" {
+		task, taskErr := worker.NewEmailNotificationTask(expenseID, userID, req.Status)
+		if taskErr == nil {
+			info, enqueueErr := h.asynqClient.Enqueue(task)
+			if enqueueErr != nil {
+				log.Printf("[Email Notification] Failed to enqueue task: %v", enqueueErr)
+			} else {
+				log.Printf("[Email Notification] Task enqueued: id=%s queue=%s", info.ID, info.Queue)
+			}
+		} else {
+			log.Printf("[Email Notification] Failed to create task: %v", taskErr)
+		}
 	}
 
 	response.Success(c, http.StatusOK, "Expense status updated successfully", nil)
