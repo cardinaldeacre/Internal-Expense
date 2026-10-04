@@ -8,6 +8,7 @@ import {Input} from '../../components/ui/input';
 import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
 import {useExpense} from '@/hooks/useExpense';
 import {useAuth} from '@/hooks/useAuth';
+import {Navigate} from 'react-router-dom';
 
 export const MyExpensesPage: React.FC = () => {
 	const {expenses, loading, fetchExpenses, updateExpenseStatus} = useExpense();
@@ -49,6 +50,10 @@ export const MyExpensesPage: React.FC = () => {
 			setIsUpdating(false);
 		}
 	};
+
+	if (!user) {
+		return <Navigate to="/login" replace />;
+	}
 
 	return (
 		<DashboardLayout user={user} onLogout={logout}>

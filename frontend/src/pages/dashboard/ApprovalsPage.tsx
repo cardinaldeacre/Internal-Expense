@@ -7,11 +7,11 @@ import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
 import {useAuth} from '@/hooks/useAuth';
 import type {ExpenseStatus} from '@/types/expense';
 import {useExpense} from '@/hooks/useExpense';
+import { Navigate } from 'react-router-dom';
 
 export const ApprovalsPage: React.FC = () => {
 	const {expenses, loading, fetchExpenses, updateExpenseStatus} = useExpense();
-	const {logout} = useAuth();
-	const user = JSON.parse(localStorage.getItem('user') || '{}');
+	const {user, logout} = useAuth();
 
 	const [page] = useState(1);
 	const [search, setSearch] = useState('');
@@ -40,6 +40,10 @@ export const ApprovalsPage: React.FC = () => {
 			setIsUpdating(false);
 		}
 	};
+		if (!user) {
+			return <Navigate to="/login" replace />;
+		}
+
 	return (
 		<DashboardLayout user={user} onLogout={logout}>
 			<PageLayout

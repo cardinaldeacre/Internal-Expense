@@ -6,6 +6,7 @@ import {MyExpensesPage} from './pages/dashboard/MyExpensesPage';
 import {ApprovalsPage} from './pages/dashboard/ApprovalsPage';
 import {DisbursementsPage} from './pages/dashboard/Disbursementspage';
 import {Toaster} from '@/components/ui/sonner';
+import {AuthProvider} from './context/AuthContext';
 
 const ProtectedRoute = ({children}: {children: React.ReactNode}) => {
 	const user = localStorage.getItem('user');
@@ -27,54 +28,56 @@ const PublicRoute = ({children}: {children: React.ReactNode}) => {
 
 export default function App() {
 	return (
-		<BrowserRouter>
-			<Routes>
-				<Route
-					path="/login"
-					element={
-						<PublicRoute>
-							<LoginPage />
-						</PublicRoute>
-					}
-				/>
+		<AuthProvider>
+			<BrowserRouter>
+				<Routes>
+					<Route
+						path="/login"
+						element={
+							<PublicRoute>
+								<LoginPage />
+							</PublicRoute>
+						}
+					/>
 
-				<Route
-					path="/dashboard"
-					element={
-						<ProtectedRoute>
-							<DashboardPage />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/my-expenses"
-					element={
-						<ProtectedRoute>
-							<MyExpensesPage />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/approvals"
-					element={
-						<ProtectedRoute>
-							<ApprovalsPage />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/disbursements"
-					element={
-						<ProtectedRoute>
-							<DisbursementsPage />
-						</ProtectedRoute>
-					}
-				/>
-				<Route path="/" element={<Navigate to="/dashboard" replace />} />
+					<Route
+						path="/dashboard"
+						element={
+							<ProtectedRoute>
+								<DashboardPage />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/my-expenses"
+						element={
+							<ProtectedRoute>
+								<MyExpensesPage />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/approvals"
+						element={
+							<ProtectedRoute>
+								<ApprovalsPage />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/disbursements"
+						element={
+							<ProtectedRoute>
+								<DisbursementsPage />
+							</ProtectedRoute>
+						}
+					/>
+					<Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-				<Route path="*" element={<Navigate to="/dashboard" replace />} />
-			</Routes>
-			<Toaster richColors position="top-right" />
-		</BrowserRouter>
+					<Route path="*" element={<Navigate to="/dashboard" replace />} />
+				</Routes>
+				<Toaster richColors position="top-right" />
+			</BrowserRouter>
+		</AuthProvider>
 	);
 }

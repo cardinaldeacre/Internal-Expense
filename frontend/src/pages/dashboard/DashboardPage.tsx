@@ -9,11 +9,11 @@ import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
 import {useAuth} from '@/hooks/useAuth';
 import {useExpense} from '@/hooks/useExpense';
 import type {ExpenseStatus} from '@/types/expense';
+import {Navigate} from 'react-router-dom';
 
 export const DashboardPage: React.FC = () => {
 	const {expenses, loading, fetchExpenses, updateExpenseStatus} = useExpense();
-	const {logout} = useAuth();
-
+	const {user, logout} = useAuth();
 	const [search, setSearch] = useState('');
 	const [statusFilter, setStatusFilter] = useState('');
 	const [page, setPage] = useState(1);
@@ -24,8 +24,6 @@ export const DashboardPage: React.FC = () => {
 		targetStatus: ExpenseStatus;
 	} | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
-
-	const user = JSON.parse(localStorage.getItem('user') || '{}');
 
 	useEffect(() => {
 		fetchExpenses({page, limit: 5, search, status: statusFilter});
@@ -53,6 +51,11 @@ export const DashboardPage: React.FC = () => {
 	const paidTotal = expenses
 		.filter((e) => e.status === 'PAID')
 		.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+	if (!user) {
+		return <Navigate to="/login" replace />;
+	}
+
 	return (
 		<DashboardLayout user={user} onLogout={logout}>
 			<div className="mb-8">
