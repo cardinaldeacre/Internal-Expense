@@ -2,6 +2,7 @@ import React from 'react';
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription} from '../ui/dialog';
 import {Badge} from '../ui/badge';
 import {Separator} from '../ui/separator';
+import ReceiptImage from './ReceiptImage';
 
 interface Expense {
 	id: string;
@@ -99,17 +100,7 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 					<div>
 						<h4 className="text-sm font-semibold text-zinc-900 mb-2">Bukti Transaksi (Struk)</h4>
 						{expense.receipt_url ? (
-							<div className="rounded-lg border border-zinc-200 overflow-hidden bg-zinc-50 flex justify-center p-2">
-								<img
-									src={`http://localhost:8080${expense.receipt_url}`}
-									alt="Bukti Struk"
-									className="max-h-75 object-contain rounded-md shadow-sm"
-									onError={(e) => {
-										(e.target as HTMLImageElement).src =
-											'https://via.placeholder.com/400x300?text=Gambar+Tidak+Ditemukan';
-									}}
-								/>
-							</div>
+							<ReceiptImage expenseId={expense.id} />
 						) : (
 							<div className="p-4 bg-zinc-50 border border-zinc-200 border-dashed rounded-lg text-center">
 								<p className="text-sm text-zinc-500">Tidak ada bukti struk yang dilampirkan.</p>
