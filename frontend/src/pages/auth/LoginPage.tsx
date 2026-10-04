@@ -88,7 +88,6 @@ export const LoginPage: React.FC = () => {
 				<CardFooter>
 					<div className="w-full rounded-lg bg-zinc-950/50 p-4 text-xs text-zinc-400 space-y-1 border border-zinc-800/60">
 						<p className="font-medium text-zinc-300">Akun Demo Pengujian:</p>
-						<p>• Admin: admin@example.com / password123</p>
 						<p>• Staff: staff@example.com / password123</p>
 						<p>• Manager: manager@example.com / password123</p>
 						<p>• Finance: finance@example.com / password123</p>

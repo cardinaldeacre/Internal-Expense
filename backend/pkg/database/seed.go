@@ -24,12 +24,6 @@ func SeedData(db *gorm.DB) {
 	log.Println("Seeding database...")
 	users := []domain.User{
 		{
-			Name:     "Super Admin",
-			Email:    "admin@example.com",
-			Password: string(hashedPassword),
-			Role:     domain.RoleAdmin,
-		},
-		{
 			Name:     "Staff Maulana",
 			Email:    "staff@example.com",
 			Password: string(hashedPassword),
