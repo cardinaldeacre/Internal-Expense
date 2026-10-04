@@ -7,12 +7,11 @@ import {ExpenseTable} from '../../components/expenses/ExpenseTable';
 import {CreateExpenseModal} from '../../components/expenses/CreateExpenseModal';
 import {Button} from '../../components/ui/button';
 import {Input} from '../../components/ui/input';
-import {toast} from 'sonner';
 import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
+import {useExpense} from '@/hooks/useExpense';
 
 export const MyExpensesPage: React.FC = () => {
-	const [expenses, setExpenses] = useState([]);
-	const [loading, setLoading] = useState(false);
+	const {expenses, loading, fetchExpenses, updateExpenseStatus} = useExpense();
 	const [search, setSearch] = useState('');
 	const [statusFilter, setStatusFilter] = useState('');
 	const [page] = useState(1);
@@ -26,23 +25,14 @@ export const MyExpensesPage: React.FC = () => {
 	const user = JSON.parse(localStorage.getItem('user') || '{}');
 	const navigate = useNavigate();
 
-	const fetchMyExpenses = async () => {
-		setLoading(true);
-		try {
-			const res = await api.get(
-				`/expenses?page=${page}&limit=10&search=${search}&status=${statusFilter}`
-			);
-			setExpenses(res.data.data?.items || res.data.data || []);
-		} catch (err) {
-			console.error('Gagal mengambil data pengajuan', err);
-		} finally {
-			setLoading(false);
-		}
-	};
-
 	useEffect(() => {
-		fetchMyExpenses();
-	}, [page, search, statusFilter]);
+		fetchExpenses({
+			page,
+			limit: 10,
+			search,
+			status: statusFilter,
+		});
+	}, [page, search, statusFilter, fetchExpenses]);
 
 	const handleLogout = async () => {
 		try {
@@ -65,22 +55,12 @@ export const MyExpensesPage: React.FC = () => {
 
 		setIsUpdating(true);
 
-		const request = api
-			.patch(`/expenses/${actionData.id}/status`, {
-				status: actionData.targetStatus,
-				notes,
-			})
-			.finally(() => setIsUpdating(false));
-
-		toast.promise(request, {
-			loading: 'Memperbarui status...',
-			success: () => {
-				setActionData(null);
-				fetchMyExpenses();
-				return 'Status berhasil diperbarui!';
-			},
-			error: (err) => err.response?.data?.message || 'Gagal memperbarui status',
-		});
+		try {
+			await updateExpenseStatus(actionData.id, actionData.targetStatus, notes);
+			setActionData(null);
+		} finally {
+			setIsUpdating(false);
+		}
 	};
 
 	return (
@@ -129,7 +109,7 @@ export const MyExpensesPage: React.FC = () => {
 			<CreateExpenseModal
 				isOpen={showModal}
 				onClose={() => setShowModal(false)}
-				onSuccess={fetchMyExpenses}
+				onSuccess={fetchExpenses}
 			/>
 
 			<StatusUpdateModal
