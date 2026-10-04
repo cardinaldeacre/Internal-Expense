@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"internal-expense-backend/pkg/response"
 	"net/http"
 	"strings"
@@ -11,7 +12,11 @@ import (
 func CSRFMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method == http.MethodOptions {
-			c.AbortWithStatus(http.StatusNoContent)
+			c.Error(response.NewAppError(
+				response.ErrNotFound,
+				"No content",
+				nil,
+			))
 			return
 		}
 
@@ -30,9 +35,18 @@ func CSRFMiddleware() gin.HandlerFunc {
 		headerToken := c.GetHeader("X-CSRF-Token")
 
 		if err != nil || headerToken == "" || cookieToken != headerToken {
-			response.Error(c, http.StatusForbidden, "Access denied: invalid CSRF token")
+			internalErr := err
+			if internalErr == nil {
+				internalErr = fmt.Errorf("header token: '%s', cookie token: '%s'", headerToken, cookieToken)
+			}
+
+			c.Error(response.NewAppError(
+				response.ErrForbidden,
+				"Akses ditolak: Token CSRF tidak valid",
+				internalErr,
+			))
+
 			c.Abort()
-			return
 		}
 
 		c.Next()

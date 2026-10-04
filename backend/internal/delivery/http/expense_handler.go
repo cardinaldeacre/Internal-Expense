@@ -53,29 +53,49 @@ func (h *ExpenseHandler) CreateExpense(c *gin.Context) {
 	file, err := c.FormFile("receipt")
 	if err == nil {
 		if file.Size > 2*1024*1024 {
-			response.Error(c, http.StatusUnprocessableEntity, "Receipt file size exceeds 2MB limit")
+			c.Error(response.NewAppError(
+				response.ErrValidation,
+				"Ukuran file struk melebihi batas 2MB",
+				err,
+			))
 			return
 		}
 
 		contentType := file.Header.Get("Content-Type")
 		if contentType != "image/jpeg" && contentType != "image/png" && contentType != "application/pdf" {
-			response.Error(c, http.StatusUnprocessableEntity, "Invalid receipt file type. Only JPEG, PNG, and PDF are allowed")
+			c.Error(response.NewAppError(
+				response.ErrValidation,
+				"Jenis file struk tidak valid. Hanya file JPEG, PNG, dan PDF yang diperbolehkan",
+				err,
+			))
 			return
 		}
 
 		receiptURL, err = utils.UploadToMinIO(file)
 		if err != nil {
-			response.Error(c, http.StatusInternalServerError, "Failed to upload receipt to cloud storage: "+err.Error())
+			c.Error(response.NewAppError(
+				response.ErrInternal,
+				"Gagal mengunggah struk ke penyimpanan cloud",
+				err,
+			))
 			return
 		}
 	} else if req.IsSubmitted {
-		response.Error(c, http.StatusBadRequest, "Receipt is required when submitting an expense")
+		c.Error(response.NewAppError(
+			response.ErrValidation,
+			"Struk diperlukan saat mengajukan pengeluaran",
+			nil,
+		))
 		return
 	}
 
 	expense, err := h.expenseUsecase.Create(userID, req.Title, req.Description, req.Amount, receiptURL, req.IsSubmitted)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to create expense: "+err.Error())
+		c.Error(response.NewAppError(
+			response.ErrInternal,
+			"Gagal membuat pengeluaran",
+			err,
+		))
 		return
 	}
 
@@ -94,13 +114,21 @@ func (h *ExpenseHandler) UpdateStatus(c *gin.Context) {
 
 	var req UpdateExpenseStatusReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request body: "+err.Error())
+		c.Error(response.NewAppError(
+			response.ErrValidation,
+			"Invalid request body: "+err.Error(),
+			err,
+		))
 		return
 	}
 
 	err := h.expenseUsecase.UpdateStatus(expenseID, role, userID, req.Status, req.Notes)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Failed to update expense status: "+err.Error())
+		c.Error(response.NewAppError(
+			response.ErrInternal,
+			"Failed to update expense status: "+err.Error(),
+			err,
+		))
 		return
 	}
 
@@ -110,7 +138,11 @@ func (h *ExpenseHandler) UpdateStatus(c *gin.Context) {
 func (h *ExpenseHandler) GetExpenses(c *gin.Context) {
 	var query GetExpenseQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid query parameters: "+err.Error())
+		c.Error(response.NewAppError(
+			response.ErrValidation,
+			"Invalid query parameters: "+err.Error(),
+			err,
+		))
 		return
 	}
 
@@ -119,7 +151,11 @@ func (h *ExpenseHandler) GetExpenses(c *gin.Context) {
 
 	expenses, total, err := h.expenseUsecase.GetExpenses(query.Page, query.Limit, query.Search, query.Status, userID, role)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to retrieve expenses: "+err.Error())
+		c.Error(response.NewAppError(
+			response.ErrInternal,
+			"Failed to retrieve expenses: "+err.Error(),
+			err,
+		))
 		return
 	}
 
@@ -139,12 +175,20 @@ func (h *ExpenseHandler) GetReceiptImage(c *gin.Context) {
 
 	expense, err := h.expenseUsecase.GetExpenseByID(expenseID)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Expense not found")
+		c.Error(response.NewAppError(
+			response.ErrNotFound,
+			"Expense not found",
+			err,
+		))
 		return
 	}
 
 	if expense.ReceiptURL == "" {
-		response.Error(c, http.StatusNotFound, "Receipt not found")
+		c.Error(response.NewAppError(
+			response.ErrNotFound,
+			"Receipt not found",
+			nil,
+		))
 		return
 	}
 
@@ -156,7 +200,11 @@ func (h *ExpenseHandler) GetReceiptImage(c *gin.Context) {
 
 		parsedURL, err := url.Parse(receiptValue)
 		if err != nil {
-			response.Error(c, http.StatusInternalServerError, "Invalid receipt URL")
+			c.Error(response.NewAppError(
+				response.ErrValidation,
+				"Invalid receipt URL",
+				err,
+			))
 			return
 		}
 
@@ -164,7 +212,11 @@ func (h *ExpenseHandler) GetReceiptImage(c *gin.Context) {
 		parts := strings.SplitN(path, "/", 2)
 
 		if len(parts) != 2 {
-			response.Error(c, http.StatusInternalServerError, "Invalid receipt URL")
+			c.Error(response.NewAppError(
+				response.ErrValidation,
+				"Invalid receipt URL",
+				nil,
+			))
 			return
 		}
 
@@ -173,7 +225,11 @@ func (h *ExpenseHandler) GetReceiptImage(c *gin.Context) {
 
 	body, contentLength, contentType, err := utils.GetFileFromMinIO(objectKey)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Receipt file not found")
+		c.Error(response.NewAppError(
+			response.ErrNotFound,
+			"Receipt file not found",
+			err,
+		))
 		return
 	}
 

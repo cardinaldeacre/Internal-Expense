@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"internal-expense-backend/internal/usecase"
+	"internal-expense-backend/pkg/response"
 	"net/http"
 	"os"
 
@@ -12,16 +13,21 @@ import (
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method == http.MethodOptions {
-			c.AbortWithStatus(http.StatusNoContent)
+			c.Error(response.NewAppError(
+				response.ErrNotFound,
+				"No content",
+				nil,
+			))
 			return
 		}
 
 		tokenString, err := c.Cookie("token")
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"message": "Unauthorized: No token provided",
-			})
+			c.Error(response.NewAppError(
+				response.ErrAuth,
+				"Unauthorized: No token provided",
+				nil,
+			))
 			return
 		}
 
@@ -33,10 +39,11 @@ func AuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"message": "Unauthorized: Invalid or expired token",
-			})
+			c.Error(response.NewAppError(
+				response.ErrAuth,
+				"Unauthorized: Invalid or expired token",
+				err,
+			))
 			return
 		}
 
@@ -52,19 +59,21 @@ func RBACMiddleware(allowedRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, exists := c.Get("role")
 		if !exists {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"success": false,
-				"message": "Forbidden: Role not found",
-			})
+			c.Error(response.NewAppError(
+				response.ErrForbidden,
+				"Forbidden: Role not found",
+				nil,
+			))
 			return
 		}
 
 		roleStr, ok := userRole.(string)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"success": false,
-				"message": "Forbidden: Invalid role format",
-			})
+			c.Error(response.NewAppError(
+				response.ErrForbidden,
+				"Forbidden: Invalid role format",
+				nil,
+			))
 			return
 		}
 
@@ -77,10 +86,11 @@ func RBACMiddleware(allowedRoles ...string) gin.HandlerFunc {
 		}
 
 		if !allowed {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"success": false,
-				"message": "Forbidden: You do not have permission to access this resource",
-			})
+			c.Error(response.NewAppError(
+				response.ErrForbidden,
+				"Forbidden: You do not have permission to access this resource",
+				nil,
+			))
 			return
 		}
 

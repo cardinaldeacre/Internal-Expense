@@ -34,13 +34,21 @@ func generateCSRFToken() string {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request body: "+err.Error())
+		c.Error(response.NewAppError(
+			response.ErrValidation,
+			"Invalid request body: "+err.Error(),
+			err,
+		))
 		return
 	}
 
 	token, user, err := h.authUsecase.Login(req.Email, req.Password)
 	if err != nil {
-		response.Error(c, http.StatusUnauthorized, "Invalid email or password, "+err.Error())
+		c.Error(response.NewAppError(
+			response.ErrAuth,
+			"Invalid email or password, "+err.Error(),
+			err,
+		))
 		return
 	}
 
@@ -76,7 +84,11 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	role := c.GetString("role")
 
 	if userID == "" {
-		response.Error(c, http.StatusUnauthorized, "invalid token or user not found")
+		c.Error(response.NewAppError(
+			response.ErrAuth,
+			"invalid token or user not found",
+			nil,
+		))
 		return
 	}
 
@@ -92,14 +104,22 @@ func AuthMiddlewareCookieOnlyTest(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("token")
 		if err != nil {
-			response.Error(c, http.StatusUnauthorized, "Unauthorized: No token provided")
+			c.Error(response.NewAppError(
+				response.ErrAuth,
+				"Unauthorized: No token provided",
+				nil,
+			))
 			c.Abort()
 			return
 		}
 
 		user, err := usecase.ValidateToken(db, tokenString)
 		if err != nil {
-			response.Error(c, http.StatusUnauthorized, "Unauthorized: Invalid or expired token")
+			c.Error(response.NewAppError(
+				response.ErrAuth,
+				"Unauthorized: Invalid or expired token",
+				err,
+			))
 			c.Abort()
 			return
 		}
