@@ -1,62 +1,37 @@
 import React, {useEffect, useState} from 'react';
-import api from '../../services/api';
-import {useNavigate} from 'react-router-dom';
 import {DashboardLayout} from '../../components/layout/DashboardLayout';
 import {ExpenseTable} from '../../components/expenses/ExpenseTable';
 import {CreateExpenseModal} from '../../components/expenses/CreateExpenseModal';
 import {Button} from '../../components/ui/button';
 import {Input} from '../../components/ui/input';
 import {StatCards} from '@/components/dashboard/StatCard';
-import {toast} from 'sonner';
 import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
+import {useAuth} from '@/hooks/useAuth';
+import {useExpense} from '@/hooks/useExpense';
+import type {ExpenseStatus} from '@/types/expense';
 
 export const DashboardPage: React.FC = () => {
-	const [expenses, setExpenses] = useState<any[]>([]);
-	const [loading, setLoading] = useState(false);
+	const {expenses, loading, fetchExpenses, updateExpenseStatus} = useExpense();
+	const {logout} = useAuth();
+
 	const [search, setSearch] = useState('');
 	const [statusFilter, setStatusFilter] = useState('');
 	const [page, setPage] = useState(1);
 	const [showModal, setShowModal] = useState(false);
+
 	const [actionData, setActionData] = useState<{
 		id: string;
-		targetStatus: any;
+		targetStatus: ExpenseStatus;
 	} | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
 
 	const user = JSON.parse(localStorage.getItem('user') || '{}');
-	const navigate = useNavigate();
-
-	const fetchExpenses = async () => {
-		setLoading(true);
-		try {
-			const res = await api.get(
-				`/expenses?page=${page}&limit=5&search=${search}&status=${statusFilter}`
-			);
-			setExpenses(res.data.data?.items || res.data.data || []);
-		} catch (err) {
-			console.error('Failed to fetch expenses', err);
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	useEffect(() => {
-		fetchExpenses();
-	}, [page, search, statusFilter]);
+		fetchExpenses({page, limit: 5, search, status: statusFilter});
+	}, [page, search, statusFilter, fetchExpenses]);
 
-	const handleLogout = async () => {
-		try {
-			await api.post('/auth/logout', {}, {skipGlobalError: true} as any);
-		} catch (err) {
-			console.warn('Sesi server berakhir...');
-		} finally {
-			localStorage.removeItem('csrf_token');
-			localStorage.removeItem('user');
-			navigate('/login');
-		}
-	};
-
-	const handleTriggerAction = (id: string, newStatus: string) => {
+	const handleTriggerAction = (id: string, newStatus: ExpenseStatus) => {
 		setActionData({id, targetStatus: newStatus});
 	};
 
@@ -64,22 +39,12 @@ export const DashboardPage: React.FC = () => {
 		if (!actionData) return;
 		setIsUpdating(true);
 
-		const request = api
-			.patch(`/expenses/${actionData.id}/status`, {
-				status: actionData.targetStatus,
-				notes,
-			})
-			.finally(() => setIsUpdating(false));
-
-		toast.promise(request, {
-			loading: 'Memperbarui status...',
-			success: () => {
-				setActionData(null);
-				fetchExpenses();
-				return 'Status berhasil diperbarui!';
-			},
-			error: (err) => err.response?.data?.message || 'Gagal memperbarui status',
-		});
+		try {
+			await updateExpenseStatus(actionData.id, actionData.targetStatus, notes);
+			setActionData(null);
+		} finally {
+			setIsUpdating(false);
+		}
 	};
 
 	const totalExpense = expenses.reduce((acc, curr) => acc + (curr.amount || 0), 0);
@@ -88,9 +53,8 @@ export const DashboardPage: React.FC = () => {
 	const paidTotal = expenses
 		.filter((e) => e.status === 'PAID')
 		.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-
 	return (
-		<DashboardLayout user={user} onLogout={handleLogout}>
+		<DashboardLayout user={user} onLogout={logout}>
 			<div className="mb-8">
 				<StatCards
 					totalExpense={totalExpense}

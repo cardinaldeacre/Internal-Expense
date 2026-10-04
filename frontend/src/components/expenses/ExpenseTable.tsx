@@ -3,13 +3,13 @@ import {Button} from '../ui/button';
 import {Badge} from '../ui/badge';
 import {ExpenseDetailModal} from './ExpenseDetailModal';
 import {toast} from 'sonner';
-import type {Expense} from '@/types/expense';
+import type {Expense, ExpenseStatus} from '@/types/expense';
 
 interface ExpenseTableProps {
 	expenses: Expense[];
 	loading: boolean;
 	userRole: string;
-	onUpdateStatus: (id: string, newStatus: string) => void;
+	onUpdateStatus: (id: string, newStatus: ExpenseStatus) => void;
 }
 
 export const ExpenseTable: React.FC<ExpenseTableProps> = ({

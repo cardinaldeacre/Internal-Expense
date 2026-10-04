@@ -1,6 +1,4 @@
 import React, {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import api from '@/services/api';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {
@@ -13,33 +11,14 @@ import {
 } from '@/components/ui/card';
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {Field, FieldError, FieldGroup, FieldLabel} from '@/components/ui/field';
+import {useAuth} from '@/hooks/useAuth';
 
 export const LoginPage: React.FC = () => {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
-	const [error, setError] = useState('');
-	const [loading, setLoading] = useState(false);
-	const navigate = useNavigate();
-
-	const handleLogin = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setLoading(true);
-		setError('');
-
-		try {
-			const res = await api.post('/auth/login', {email, password});
-			const {csrfToken, user} = res.data.data;
-
-			localStorage.setItem('csrf_token', csrfToken);
-			localStorage.setItem('user', JSON.stringify(user));
-
-			navigate('/dashboard');
-		} catch (err: any) {
-			setError(err.response?.data?.message || 'Login gagal. Periksa kembali email dan password.');
-		} finally {
-			setLoading(false);
-		}
-	};
+	const [error] = useState('');
+	const [loading] = useState(false);
+	const {login} = useAuth();
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-zinc-50">
@@ -60,7 +39,11 @@ export const LoginPage: React.FC = () => {
 						</Alert>
 					)}
 
-					<form onSubmit={handleLogin}>
+					<form
+						onSubmit={(event) => {
+							event.preventDefault();
+							void login(email, password);
+						}}>
 						<FieldGroup className="space-y-4">
 							<Field>
 								<FieldLabel className="text-xs font-medium uppercase tracking-wider text-zinc-400">

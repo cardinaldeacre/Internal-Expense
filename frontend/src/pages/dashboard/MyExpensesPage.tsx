@@ -1,6 +1,4 @@
 import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import api from '../../services/api';
 import {DashboardLayout} from '../../components/layout/DashboardLayout';
 import {PageLayout} from '../../components/layout/PageLayout';
 import {ExpenseTable} from '../../components/expenses/ExpenseTable';
@@ -9,6 +7,7 @@ import {Button} from '../../components/ui/button';
 import {Input} from '../../components/ui/input';
 import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
 import {useExpense} from '@/hooks/useExpense';
+import {useAuth} from '@/hooks/useAuth';
 
 export const MyExpensesPage: React.FC = () => {
 	const {expenses, loading, fetchExpenses, updateExpenseStatus} = useExpense();
@@ -21,9 +20,9 @@ export const MyExpensesPage: React.FC = () => {
 		targetStatus: any;
 	} | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
+	const {logout} = useAuth();
 
 	const user = JSON.parse(localStorage.getItem('user') || '{}');
-	const navigate = useNavigate();
 
 	useEffect(() => {
 		fetchExpenses({
@@ -33,18 +32,6 @@ export const MyExpensesPage: React.FC = () => {
 			status: statusFilter,
 		});
 	}, [page, search, statusFilter, fetchExpenses]);
-
-	const handleLogout = async () => {
-		try {
-			await api.post('/auth/logout', {}, {skipGlobalError: true} as any);
-		} catch (err) {
-			console.warn('Sesi berakhir...');
-		} finally {
-			localStorage.removeItem('csrf_token');
-			localStorage.removeItem('user');
-			navigate('/login');
-		}
-	};
 
 	const handleTriggerAction = (id: string, newStatus: string) => {
 		setActionData({id, targetStatus: newStatus});
@@ -64,7 +51,7 @@ export const MyExpensesPage: React.FC = () => {
 	};
 
 	return (
-		<DashboardLayout user={user} onLogout={handleLogout}>
+		<DashboardLayout user={user} onLogout={logout}>
 			<PageLayout
 				title="Pengajuan Saya"
 				description="Kelola dan pantau seluruh riwayat pengajuan dana operasional Anda."

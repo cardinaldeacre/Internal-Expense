@@ -1,56 +1,33 @@
 import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import api from '../../services/api';
 import {DashboardLayout} from '../../components/layout/DashboardLayout';
 import {PageLayout} from '../../components/layout/PageLayout';
 import {ExpenseTable} from '../../components/expenses/ExpenseTable';
 import {Input} from '../../components/ui/input';
-import {toast} from 'sonner';
 import {StatusUpdateModal} from '@/components/expenses/StatusUpdateModal';
+import {useAuth} from '@/hooks/useAuth';
+import {useExpense} from '@/hooks/useExpense';
+import type {ExpenseStatus} from '@/types/expense';
 
 export const DisbursementsPage: React.FC = () => {
-	const [expenses, setExpenses] = useState([]);
-	const [loading, setLoading] = useState(false);
+	const {expenses, loading, fetchExpenses, updateExpenseStatus} = useExpense();
+	const {logout} = useAuth();
+
 	const [search, setSearch] = useState('');
 	const [page] = useState(1);
+
 	const [actionData, setActionData] = useState<{
 		id: string;
-		targetStatus: any;
+		targetStatus: ExpenseStatus;
 	} | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
 
 	const user = JSON.parse(localStorage.getItem('user') || '{}');
-	const navigate = useNavigate();
-
-	const fetchDisbursements = async () => {
-		setLoading(true);
-		try {
-			const res = await api.get(`/expenses?page=${page}&limit=10&search=${search}&status=APPROVED`);
-			setExpenses(res.data.data?.items || res.data.data || []);
-		} catch (err) {
-			console.error('Gagal mengambil data pencairan', err);
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	useEffect(() => {
-		fetchDisbursements();
-	}, [page, search]);
+		fetchExpenses({page, limit: 10, search, status: 'APPROVED'});
+	}, [page, search, fetchExpenses]);
 
-	const handleLogout = async () => {
-		try {
-			await api.post('/auth/logout', {}, {skipGlobalError: true} as any);
-		} catch (err) {
-			console.warn('Sesi berakhir...');
-		} finally {
-			localStorage.removeItem('csrf_token');
-			localStorage.removeItem('user');
-			navigate('/login');
-		}
-	};
-
-	const handleTriggerAction = (id: string, newStatus: string) => {
+	const handleTriggerAction = (id: string, newStatus: ExpenseStatus) => {
 		setActionData({id, targetStatus: newStatus});
 	};
 
@@ -58,23 +35,16 @@ export const DisbursementsPage: React.FC = () => {
 		if (!actionData) return;
 		setIsUpdating(true);
 
-		const request = api
-			.patch(`/expenses/${actionData.id}/status`, {status: actionData.targetStatus, notes})
-			.finally(() => setIsUpdating(false));
-
-		toast.promise(request, {
-			loading: 'Memproses perubahan status...',
-			success: () => {
-				setActionData(null);
-				fetchDisbursements();
-				return 'Status berhasil diubah!';
-			},
-			error: (err) => err.response?.data?.message || 'Gagal mengubah status',
-		});
+		try {
+			await updateExpenseStatus(actionData.id, actionData.targetStatus, notes);
+			setActionData(null);
+		} finally {
+			setIsUpdating(false);
+		}
 	};
 
 	return (
-		<DashboardLayout user={user} onLogout={handleLogout}>
+		<DashboardLayout user={user} onLogout={logout}>
 			<PageLayout
 				title="Pencairan Dana (Disbursements)"
 				description="Proses pembayaran untuk pengajuan operasional yang telah disetujui."

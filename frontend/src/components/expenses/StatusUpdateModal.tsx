@@ -10,12 +10,13 @@ import {
 import {Button} from '../ui/button';
 import {Label} from '../ui/label';
 import {Textarea} from '../ui/textarea';
+import type {ExpenseStatus} from '@/types/expense';
 
 interface StatusUpdateModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onConfirm: (notes: string) => void;
-	actionType: 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PAID' | null;
+	actionType: ExpenseStatus | null;
 	isLoading: boolean;
 }
 
@@ -28,7 +29,7 @@ export const StatusUpdateModal: React.FC<StatusUpdateModalProps> = ({
 }) => {
 	const [notes, setNotes] = useState('');
 
-	if (!isOpen || !actionType) return null;
+	if (!isOpen || !actionType || actionType === 'DRAFT') return null;
 
 	const config = {
 		SUBMITTED: {
