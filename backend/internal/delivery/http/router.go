@@ -48,4 +48,5 @@ func SetupRouter(r *gin.Engine, authHandler *AuthHandler, expenseHandler *Expens
 	protectedAuth.POST("/auth/logout", authHandler.Logout)
 	protectedAuth.GET("/auth/me", authHandler.Me)
 	protectedAuth.GET("/expenses", expenseHandler.GetExpenses)
+	protectedAuth.GET("/expenses/:id/receipt", expenseHandler.GetReceiptImage)
 }

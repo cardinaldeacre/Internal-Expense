@@ -82,3 +82,15 @@ func (u *ExpenseUseCase) GetExpenses(page, limit int, search, status, userID, ro
 	expenseRepo := repository.NewExpenseRepository(u.db)
 	return expenseRepo.FindAll(page, limit, search, status, userID, role)
 }
+
+func (uc *ExpenseUseCase) GetExpenseByID(id string) (*domain.ExpenseRequest, error) {
+	var expense domain.ExpenseRequest
+
+	result := uc.db.First(&expense, "id = ?", id)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &expense, nil
+}

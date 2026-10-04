@@ -1,4 +1,7 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, {
+    type AxiosError,
+    type InternalAxiosRequestConfig,
+} from 'axios';
 import { toast } from 'sonner';
 
 interface ErrorResponseData {
@@ -7,8 +10,10 @@ interface ErrorResponseData {
     error?: string;
 }
 
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const api = axios.create({
-    baseURL: 'http://localhost:8080/api/v1',
+    baseURL: `${API_BASE_URL}/api/v1`,
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
@@ -17,11 +22,19 @@ const api = axios.create({
 
 const getCSRFToken = (): string | null => {
     const localToken = localStorage.getItem('csrf_token');
-    if (localToken && localToken !== 'undefined' && localToken !== 'null') {
+
+    if (
+        localToken &&
+        localToken !== 'undefined' &&
+        localToken !== 'null'
+    ) {
         return localToken;
     }
 
-    const match = document.cookie.match(new RegExp('(^| )csrf_token=([^;]+)'));
+    const match = document.cookie.match(
+        new RegExp('(^| )csrf_token=([^;]+)')
+    );
+
     if (match) {
         return match[2];
     }
@@ -32,11 +45,17 @@ const getCSRFToken = (): string | null => {
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const csrfToken = getCSRFToken();
-        const method = config.method ? config.method.toUpperCase() : '';
+        const method = config.method
+            ? config.method.toUpperCase()
+            : '';
 
-        if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        if (
+            csrfToken &&
+            ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
+        ) {
             config.headers.set('X-CSRF-Token', csrfToken);
         }
+
         return config;
     },
     (error: AxiosError) => {
@@ -52,43 +71,62 @@ declare module 'axios' {
 
 api.interceptors.response.use(
     (response) => response,
+
     (error: AxiosError<ErrorResponseData>) => {
-        const status = error.response ? error.response.status : null;
+        const status = error.response
+            ? error.response.status
+            : null;
+
         const errorData = error.response?.data;
 
-        const skipGlobalError = error.config?.skipGlobalError ?? false;
+        const skipGlobalError =
+            error.config?.skipGlobalError ?? false;
 
         switch (status) {
             case 401:
                 localStorage.removeItem('csrf_token');
                 localStorage.removeItem('user');
+
                 if (window.location.pathname !== '/login') {
-                    window.location.href = '/login?session=expired';
+                    window.location.href =
+                        '/login?session=expired';
                 }
                 break;
 
             case 403:
                 if (!skipGlobalError) {
-                    toast.error(errorData?.message || 'Akses Ditolak: Anda tidak memiliki hak akses.');
+                    toast.error(
+                        errorData?.message ||
+                        'Akses Ditolak: Anda tidak memiliki hak akses.'
+                    );
                 }
                 break;
 
             case 400:
             case 422:
-                toast.warning(`Validasi input gagal: ${errorData?.message || error.message}`);
+                toast.warning(
+                    `Validasi input gagal: ${errorData?.message || error.message
+                    }`
+                );
                 break;
 
             case 429:
-                toast.warning('Terlalu banyak permintaan. Mohon tunggu beberapa saat sebelum mencoba lagi.');
+                toast.warning(
+                    'Terlalu banyak permintaan. Mohon tunggu beberapa saat sebelum mencoba lagi.'
+                );
                 break;
 
             case 500:
-                toast.error('Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.');
+                toast.error(
+                    'Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.'
+                );
                 break;
 
             default:
                 if (!error.response) {
-                    toast.error('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+                    toast.error(
+                        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.'
+                    );
                 }
                 break;
         }
@@ -96,4 +134,5 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
 export default api;

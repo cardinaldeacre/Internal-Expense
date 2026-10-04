@@ -1,19 +1,22 @@
 package http
 
 import (
+	"io"
+	"log"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"internal-expense-backend/internal/usecase"
 	"internal-expense-backend/pkg/response"
 	"internal-expense-backend/pkg/utils"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type ExpenseHandler struct {
 	expenseUsecase *usecase.ExpenseUseCase
-	db             *gorm.DB
 }
 
 func NewExpenseHandler(expenseUsecase *usecase.ExpenseUseCase) *ExpenseHandler {
@@ -129,4 +132,62 @@ func (h *ExpenseHandler) GetExpenses(c *gin.Context) {
 		},
 	},
 	)
+}
+
+func (h *ExpenseHandler) GetReceiptImage(c *gin.Context) {
+	expenseID := c.Param("id")
+
+	expense, err := h.expenseUsecase.GetExpenseByID(expenseID)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, "Expense not found")
+		return
+	}
+
+	if expense.ReceiptURL == "" {
+		response.Error(c, http.StatusNotFound, "Receipt not found")
+		return
+	}
+
+	receiptValue := expense.ReceiptURL
+	objectKey := receiptValue
+
+	if strings.HasPrefix(receiptValue, "http://") ||
+		strings.HasPrefix(receiptValue, "https://") {
+
+		parsedURL, err := url.Parse(receiptValue)
+		if err != nil {
+			response.Error(c, http.StatusInternalServerError, "Invalid receipt URL")
+			return
+		}
+
+		path := strings.TrimPrefix(parsedURL.Path, "/")
+		parts := strings.SplitN(path, "/", 2)
+
+		if len(parts) != 2 {
+			response.Error(c, http.StatusInternalServerError, "Invalid receipt URL")
+			return
+		}
+
+		objectKey = parts[1]
+	}
+
+	body, contentLength, contentType, err := utils.GetFileFromMinIO(objectKey)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, "Receipt file not found")
+		return
+	}
+
+	defer body.Close()
+
+	c.Header("Content-Type", contentType)
+
+	if contentLength > 0 {
+		c.Header("Content-Length", strconv.FormatInt(contentLength, 10))
+	}
+
+	c.Status(http.StatusOK)
+
+	if _, err := io.Copy(c.Writer, body); err != nil {
+		log.Printf("[Receipt] Failed to stream receipt: %v", err)
+	}
 }
